@@ -1,147 +1,224 @@
-.TH AMULEWEB 1 "Mars 2005" "Serveur Web d'aMule v2.0.0" "Outil pour aMule"
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH AMULEWEB 1 "Novembre 2011" "aMule webserver v2.3.1" "Outils d'aMule"
+.als B_untranslated B
+.als RB_untranslated RB
 .SH NOM
-amuleweb \- seruveur Web d'aMule
+amuleweb \- serveur web d'aMule
 .SH SYNOPSIS
-.B amuleweb
-.RB [ \-h " " \fI<hÙte> ]
-.RB [ \-p " " \fI<port> ]
-.RB [ \-P " " \fI<motdepasse> ]
-.RB [ \-f " " \fI<chemin> ]
-.RB [ \-q ]
-.RB [ \-v ]
-.RB [ \-w ]
-.RB [ \-t " " \fI<nom> ]
-.RB [ \-s " " \fI<port> ]
-.RB [ \-z ]
-.RB [ \-Z ]
-.RB [ \-A " " \fI<motdepasse> ]
-.RB [ \-G " " \fI<motdepasse> ]
-.RB [ \-a ]
-.RB [ \-d ]
-.RB [ \-L ]
-.PP
-.B amuleweb
-.RB [ \-f " " \fI<chemin> ]
-.B \-\-create-config-from=\fI<chemin>
-.PP
-.B amuleweb
-.RB [ \-\-help ]
-.RB [ \-\-version ]
-.PP
-.B amuleweb
-.RB [ \-\-amule\-config\-file=\fI<chemin> ]
+.B_untranslated amuleweb
+[\fB\-h\fP \fI<h√¥te>\fP] [\fB\-p\fP \fI<port>\fP] [\fB\-P\fP
+\fI<motdepasse>\fP] [\fB\-f\fP \fI<chemin>\fP]
+.RB_untranslated [ \-q ]
+.RB_untranslated [ \-v ]
+[\fB\-l\fP \fI<lang>\fP]
+.RB_untranslated [ \-w ]
+[\fB\-t\fP \fI<nom>\fP] [\fB\-s\fP \fI<port>\fP]
+.RB_untranslated [ \-u ]
+[\fB\-U\fP \fI<port>\fP]
+.RB_untranslated [ \-z ]
+.RB_untranslated [ \-Z ]
+[\fB\-A\fP \fI<motdepasse>\fP] [\fB\-G\fP \fI<motdepasse>\fP]
+.RB_untranslated [ \-a " " | " " \-d ]
+.RB_untranslated [ \-L ]
+.RB_untranslated [ \-\-no\-php ]
+.RB_untranslated [ \-N ]
+
+.B_untranslated amuleweb
+[\fB\-\-create\-config\-from\fP=\fI<chemin>\fP]
+
+.B_untranslated amuleweb
+.RB_untranslated [ \-\-help ]
+
+.B_untranslated amuleweb
+.RB_untranslated [ \-\-version ]
+
+.B_untranslated amuleweb
+[\fB\-\-amule\-config\-file\fP=\fI<chemin>\fP]
+
 .SH DESCRIPTION
-\fBamuleweb\fR prend en charge l'accËs ‡ aMule ‡ travers un navigateur Web.
-Vous pouvez le dÈmarrer en mÍme temps qu'\fBamule\fR(1), or sÈparemment, n'importe quand aprËs.
-Les options peuvent Ítre spÈcifiÈes par la ligne de commande ou par l'intermÈdiare d'un fichier de configuration.
-Les options spÈcifiÈes dans la ligne de commande ont prioritÈ sur celles contenues dans le fichier de configuration.
-.TP
-\fB\-h\fR, \fB\-\-host\fR=\fI<hÙte>\fR
-HÙte o˘ aMule tourne (dÈfaut: \fIlocalhost\fR).
-\fI<hÙte>\fR peut Ítre une adresse IP ou un nom DNS.
-.TP
-\fB\-p\fR, \fB\-\-port\fR=\fI<port>\fR
-Port d'aMule pour les Connexions Externes, tel que dÈfini dans Preferences->ContrÙles ‡ Distance (dÈfaut: \fI4712\fR).
-.TP
-\fB\-P\fR, \fB\-\-password\fR=\fI<motdepasse>\fR
-Mot de passe pour les Connexions Externes.
-.TP
-\fB\-f\fR, \fB\-\-config\-file\fR=\fI<chemin>\fR
-Utiliser le fichier de configuration dÈsignÈ. 
-Le fichier de configuration par dÈfaut est \fI~/.aMule/remote.conf\fR
-.TP
-\fB\-q\fR, \fB\-\-quiet\fR
-N'afficher aucune sortie sur stdout.
-Il est utile d'utiliser \fB\-q\fR pour faire tourner amuleweb en service (daemon), i.e. en lanÁant '\fBamuleweb \-q &\fR'
-.TP
-\fB\-v\fR, \fB\-\-verbose\fR
-Mode bavard \- affiche aussi les messages de debugage.
-.TP
-\fB\-w\fR, \fB\-\-write\-config\fR
-Ecrire les options de la ligne de commande dans le fichier de configuration et quitter.
-.TP
-\fB\-\-create\-config\-from\fR=\fI<chemin>\fR
-CrÈer un fichier de configuration basÈ sur \fI<chemin>\fR, qui doit pointer sur un fichier de configration d'aMule valide, et quitter ensuite.
-.TP
-\fB\-t\fR, \fB\-\-template\fR=\fI<nom>\fR
-Charger le modËle nommÈ \fI<nom>\fR. Voir aussi la section
-.B PRISE EN CHARGE DES SKINS.
-.TP
-\fB\-s\fR, \fB\-\-server\-port\fR=\fI<port>\fR
-Port HTTP du serveur Web. C'est le port sur lequel votre navigateur Web doit pointer (dÈfault: \fI4711\fR).
-.TP
-\fB\-z\fR, \fB\-\-enable\-gzip\fR
-Activer la compression gzip dans les Èchanges HTTP pour diminuer l'utilisation de la bande passante.
-.TP
-\fB\-Z\fR, \fB\-\-disable\-gzip\fR
-DÈsactiver la compression gzip (comportement par dÈfaut).
-.TP
-\fB\-A\fR, \fB\-\-admin\-pass\fR=\fI<motdepasse>\fR
-Mot de passe pour un accËs complet au serveur Web.
-.TP
-\fB\-G\fR, \fB\-\-guest\-pass\fR=\fI<motdepase>\fR
-Mot de passe pour un accËs restreint au seveur Web (invitÈ).
-.TP
-\fB\-a\fR, \fB\-\-allow\-guest\fR
-Autoriser l'accËs aux invitÈs.
-.TP
-\fB\-d\fR, \fB\-\-deny\-guest\fR
-Interdire l'accËs aux invitÈs (dÈfaut).
-.TP
-\fB\-L\fR, \fB\-\-load\-settings\fR
-Charger/dÈcharger les rÈglages du serveur Web depuis un aMule distant.
-Ceci permet d'ignorer les options de la ligne de commande et du fichier de configuration et charger celles\-ci depuis aMule.
-Lors de la sauvegarde des prÈfÈrences, celles\-ci ne seront pas sauvegardÈes dasn le fichier de configuratio, mais vers aMule.
-(Bien s˚r, ceci n'est valable que pour les options qui peuvent Ítre configurÈes dans Preferences->ContrÙle ‡ Distance)
-.TP
-\fB\-\-amule\-config\-file\fR=\fI<chemin>\fR
-Chemin vers le fivhier de configuration d'aMule.
-.B NE PAS UTILISER DIRECTEMENT!
-aMule utilise cette option lorsqu'il dÈmarre amuleweb au lancement d'aMule.
-Cette option provoque la non prise en compte des options de ligne de commande et du fichier de configuration, celles\-ci Ètant lues dans le fichier de configuration fourni en paramËtre, et induit aussi les options \fB\-q \-L\fR
-.TP
-\fB\-\-help\fR
-Afficher l'aide d'utilisation et quitter.
-.TP
-\fB\-\-version\fR
-Afficher les informations sur la version courante et quitter.
-.SH NOTE
-Pour toutes les options prenant en paramËtre un \fI<chemin>\fR, si le \fIchemin\fR ne contient pas de rÈpertoire (i.e. juste un nom de fichier), alors il sera considÈrÈ comme Ètant dans le rÈpertoire de configuration d'aMule, \fI~/.aMule\fR.
-.SH PRISE EN CHARGE DES SKINS
-\fBamuleweb\fR est capable d'afficher ses informations dans diffÈrents skins.
-Ces skins sont appelÈs modËles, et vous pouvez dire ‡ amuleweb de charger un modËle spÈcifique par l'otion de ligne de commande \fB\-t\fR.
-Les modËles sont recherchÈs dans deux endroits: d'abord dans \fI~/.aMule/webserver/\fR puis dans \fI$(pkgdatadir)/webserver/\fR 
-(\fI$(pkgdatadir)\fR est le rÈpertoire d'installation des donnÈes indÈpendantes de l'architecture, la plupart du temps quelque chose comme /usr/share/amule).
-Chaque modËle doit Ítre dans un sous\-rÈpertoire du nom du modËle, et ce rÈpertoire doit contenir tous les fichiers dont ‡ besoin le modËle.
-Le fichier modËle doit avoir comme nom aMule.tmpl.
+\fBamuleweb\fP g√®re votre acc√®s √† amule via un navigateur Web.  Vous pouvez
+d√©marrer ensemble amuleweb et \fBamule\fP(1), ou s√©par√©ment, √† un moment
+ult√©rieur.  Les options peuvent √™tre sp√©cifi√©es par ligne de commande ou via
+fichier de configuration. Les options pass√©es en ligne de commande pr√©valent
+sur les options de fichier de configuration.
+.TP 
+\fB[ \-h\fP \fI<h√¥te>\fP, \fB\-\-host\fP=\fI<h√¥te>\fP \fB]\fP
+H√¥te o√π aMule fonctionne (par d√©faut : \fIlocalhost\fP). \fI<h√¥te>\fP
+peut √™tre une adresse IP ou un nom DNS.
+.TP 
+\fB[ \-p\fP \fI<port>\fP, \fB\-\-port\fP=\fI<port>\fP \fB]\fP
+Port d'aMule pour les Connexions Externes, tel que d√©fini dans
+Pr√©f√©rences\->Contr√¥les √† Distance (d√©faut: \fI4712\fP)
+.TP 
+\fB[ \-P\fP \fI<motdepasse>\fP, \fB\-\-password\fP=\fI<motdepasse>\fP \fB]\fP
+Mot de passe des connexions externes.
+.TP 
+\fB[ \-f\fP \fI<chemin>\fP, \fB\-\-config\-file\fP=\fI<chemin>\fP \fB]\fP
+Utiliser le fichier de configuration d√©sign√©. Le fichier de configuration
+par d√©faut est \fI~/.aMule/remote.conf\fP
+.TP 
+.B_untranslated [ \-q\fR, \fB\-\-quiet ]\fR
+Ne pas afficher de sortie sur stdout.
+.TP 
+.B_untranslated [ \-v\fR, \fB\-\-verbose ]\fR
+Mode bavard \- affiche aussi les messages de deboguage.
+.TP 
+\fB[ \-l\fP \fI<lang>\fP, \fB\-\-locale\fP=\fI<lang>\fP \fB]\fP
+D√©finir les param√®tres r√©gionaux (langage). Voir la section \fBNOTES\fP pour la
+description du param√®tre \fI<lang>\fP.
+.TP 
+.B_untranslated [ \-w\fR, \fB\-\-write\-config ]\fR
+√âcrire les options de la ligne de commande dans le fichier de configuration
+et quitter
+.TP 
+\fB[ \-t\fP \fI<nom>\fP, \fB\-\-template\fP=\fI<nom>\fP \fB]\fP
+Charge le mod√®le nomm√© \fI<nom>\fP. Voir la section \fBSKIN SUPPORT\fP
+pour plus de d√©tails.
+.TP 
+\fB[ \-s\fP \fI<port>\fP, \fB\-\-server\-port\fP=\fI<port>\fP \fB]\fP
+Port HTTP du serveur Web. Il s'agit du port dont votre navigateur doit
+pointer (par d√©faut : \fI4711\fP).
+.TP 
+.B_untranslated [ \-u ]\fR
+.br
+Activer UPnP.
+.TP 
+\fB[ \-U\fP \fI<port>\fP, \fB\-\-upnp\-port\fP \fI<port>\fP \fB]\fP
+Port UPnP.
+.TP 
+.B_untranslated [ \-z\fR, \fB\-\-enable\-gzip ]\fR
+Activer la compression gzip pour le trafic HTTP pour √©conomiser la bande
+passante.
+.TP 
+.B_untranslated [ \-Z\fR, \fB\-\-disable\-gzip ]\fR
+D√©sactiver la compression gzip (par d√©faut).
+.TP 
+\fB[ \-A\fP \fI<motdepasse>\fP, \fB\-\-admin\-pass\fP=\fI<motdepasse>\fP \fB]\fP
+Mot de passe d'acc√®s total pour le serveur web.
+.TP 
+\fB[ \-G\fP \fI<motdepasse>\fP, \fB\-\-guest\-pass\fP=\fI<motdepasse>\fP \fB]\fP
+Mot de passe invit√© pour le serveur web.
+.TP 
+.B_untranslated [ \-a\fR, \fB\-\-allow\-guest ]\fR
+Autoriser l'acc√®s invit√©.
+.TP 
+.B_untranslated [ \-d\fR, \fB\-\-deny\-guest ]\fR
+Interdire l'acc√®s invit√© (par d√©faut).
+.TP 
+.B_untranslated [ \-L\fR, \fB\-\-load\-settings ]\fR
+Charger/enregistrer les param√®tres de serveur web √† partir de/vers l'aMule
+distant. amuleweb ignorera la ligne de commande et les param√®tres de fichier
+de configuration, et les chargera √† partir aMule. Lors de la sauvegarde,
+aucune pr√©f√©rences seront √©crites dans le fichier config, mais pour
+aMule. (Bien s√ªr, cela ne fonctionne que pour les param√®tres qui peuvent
+√™tre d√©finies dans les pr√©f√©rences de \->Contr√¥le √† distance d'aMule.)
+.TP 
+.B_untranslated [ \-\-no\-php ]\fR
+D√©sactiver l'interpr√©teur PHP (obsol√®te)
+.TP 
+.B_untranslated [ \-N\fR, \fB\-\-no\-script\-cache ]\fR
+Recompile les pages PHP √† chaque requ√™te.
+.TP 
+\fB[ \-\-create\-config\-from\fP=\fI<chemin>\fP \fB]\fP
+Cr√©er un fichier de configuration bas√© sur \fI<chemin>\fP, qui doit
+pointer sur un fichier de configration d'aMule valide, et quitter ensuite.
+.TP 
+.B_untranslated [ \-\-help ]\fR
+Afficher une court description d'utilisation.
+.TP 
+.B_untranslated [ \-\-version ]\fR
+Affiche le num√©ro de la version actuelle.
+.TP 
+\fB[ \-\-amule\-config\-file\fP=\fI<chemin>\fP \fB]\fP
+Chemin du fichier de configuration d'aMule. \fBNE PAS UTILISER DIRECTEMENT !\fP
+aMule utilise cette option lors du d√©marrage d'amuleweb au d√©marrage
+d'aMule. Cette option permet d'ignorer toutes les autres commandes en ligne
+et les param√®tres de fichier de configuration, et lit les pr√©f√©rences dans
+un fichier de configuration pr√©cis√©, et implique √©galement les options \fB\-q
+\-L\fP.
+.SH NOTES
+.SS Chemins
+Pour toutes les options prenant en param√®tre un \fI<chemin>\fP, si le
+\fIchemin\fP ne contient pas de r√©pertoire (i.e. juste un nom de fichier),
+alors il sera consid√©r√© comme √©tant dans le r√©pertoire de configuration
+d'aMule, \fI~/.aMule\fP.
+.SS Langages
+Le param√®tre \fI<lang>\fP pour \fB\-l\fP l'option a la forme suivante :
+\fIlang\fP[\fB_\fP\fILANG\fP][\fB.\fP\fIencoding\fP][\fB@\fP\fImodifier\fP] o√π \fIlang\fP est la
+langue principale, \fILANG\fP est is a dialecte, \fIencoding\fP est le caract√®re
+d√©fini √† utiliser et \fImodifier\fP permet √† l'utilisateur de s√©lectionner une
+instance sp√©cifique des donn√©es de localisation dans une seule cat√©gorie.
+
+Par exemple, les cha√Ænes de caract√®res suivantes sont valables :
+.RS
+.RB_untranslated de
+.br
+.RB_untranslated de_DE
+.br
+.RB_untranslated de_DE.iso88591
+.br
+.RB_untranslated de_DE@euro
+.br
+.RB_untranslated de_DE.iso88591@euro
+.RE
+
+Bien que toutes les cha√Ænes ci\-dessus sont accept√©es comme des d√©finitions
+de langue valide,  \fIencoding\fP et \fImodifier\fP ne sont pas encore utilis√©.
+
+En plus du format ci\-dessus, vous pouvez √©galement sp√©cifier des noms entier
+de langue en anglais \- so \fB\-l german\fP est √©galement valide et √©quivaut √†
+\fB\-l de_DE\fP.
+
+En l'absence de param√®tres linguistiques d√©finie, soit sur ‚Äã‚Äãla ligne de
+commande ou dans le fichier de configuration, la langue utilis√© par d√©faut
+sera celle du syst√®me d'exploitation.
+.SH "SUPPORT DE THEMES"
+\fBamuleweb\fP est capable d'afficher des informations dans diff√©rents
+th√®mes. Ces th√®mes sont appel√©s mod√®les, et vous pouvez faire de charger √†
+amuleweb un mod√®le sp√©cifique via \fB\-t\fP l'option en ligne de commande. Les
+mod√®les sont recherch√©s dans deux endroits : d'abord dans :
+\fI~/.aMule/webserver/\fP puis dans \fI/usr/share/amule/webserver/\fP si vous
+l'avez install√© avec \-\-prefix=/usr.
 .PP
-Par exemple, le modËle par dÈfaut (nommÈ 'default') se trouve dans webserver/default/, et ce rÈpertoure contient aMule.tmpl ainsi qu'un grand nombre de fichiers d'images.
+Chaque mod√®le doit √™tre dans un sous r√©pertoire du nom du mod√®le, et ce
+r√©pertoire doit contenir tous les fichiers dont le mod√®le a besoins.
 .SH FICHIERS
 ~/.aMule/remote.conf
 .br
 ~/.aMule/webserver/
 .br
-\fI$(pkgdatadir)\fR/webserver/
+\fI$(pkgdatadir)\fP/webserver/
 .SH EXEMPLE
-Typiquement amuleweb sera lancÈ la premiËre fois de la faÁon suivante:
+Typiquement amuleweb sera lanc√© la premier ainsi :
 .PP
-\fBamuleweb\fR \fB\-h\fR \fIhostname\fR \fB\-p\fR \fIECport\fR \fB\-P\fR \fIECpassword\fR \fB\-s\fR \fIHTTPport\fR \fB\-A\fR \fIAdminPassword\fR \fB\-w\fR
+\fBamuleweb\fP \fB\-h\fP \fInom de l'h√¥te\fP \fB\-p\fP \fIport EC\fP \fB\-P\fP \fImot de passe EC\fP
+\fB\-s\fP \fIport HTTP\fP \fB\-A\fP \fImot de passe Admin\fP \fB\-w\fP
 .PP
 ou
 .PP
-\fBamuleweb\fR \fB\-\-create-config-from\fR=\fI/home/username/.aMule/amule.conf\fR
+\fBamuleweb\fP \fB\-\-create\-config\-from\fP=\fI/home/username/.aMule/amule.conf\fP
 .PP
-Cela sauvegardera les options dans \fI$HOME/.aMule/remote.conf\fR, et les fois suivantes, vous n'aurez ‡ taper que:
+Cela sauvegardera les options dans \fI$HOME/.aMule/remote.conf\fP, et il
+suffira de taper plus tard :
 .PP
-.B amuleweb
+.B_untranslated amuleweb
 .PP
-Bien s˚r, vous pouvez ajouter plus ou moins d'options de ligne de commande, ou vous pouvez aussi n'en spÈcifier aucune.
-.SH SIGNALEMENT DES BUGS
-Reportez les bugs sur notre forum (\fIhttp://forum.amule.org/\fR), ou dans notre bugtracker (\fIhttp://bugs.amule.org/\fR).
-N'utilisez ni un e-mail, ni notre liste de diffusion ni ne reportez directement un bug ‡ un membre de notre equipe.
+Bien s√ªr, vous pouvez sp√©cifier plus ou moins d'options sur la premi√®re
+ligne d'exemple, et vous pouvez √©galement totalement le supprimer.
+.SH "RAPPORTER DES BOGUES"
+Veuillez rapporter les bogues sur notre forum (\fIhttp://forum.amule.org/\fP),
+ou sur notre bugtracker (\fIhttp://bugs.amule.org/\fP).  Veuillez ne pas
+rapporter les bogues par e\-mail, sur notre liste de diffusion ou directement
+√† n'importe quel membre  de l'√©quipe.
 .SH COPYRIGHT
-aMule et tous les utilitaires associÈs sont distribuÈs sous licence GNU General Public License.
-.SH VOIR AUSSI
-\fBamule\fR(1), \fBamulecmd\fR(1)
-.SH TRADUCTION
-ThePolish, 2005
+aMule et tout ses outils sont distribu√©s sous la licence GNU General Public
+License.
+.SH "VOIR AUSSI"
+.B_untranslated amule\fR(1), \fBamulecmd\fR(1)
+.SH AUTEUR
+Cette manpage a √©t√© √©crite par Vollstrecker
+<amule@vollstreckernet.de>

@@ -1,7 +1,7 @@
 //
 // This file is part of the aMule Project.
 //
-// Copyright (c) 2004-2009 aMule Team ( admin@amule.org / http://www.amule.org )
+// Copyright (c) 2004-2011 aMule Team ( admin@amule.org / http://www.amule.org )
 //
 // Any parts of this program derived from the xMule, lMule or eMule project,
 // or contributed by third-party developers are copyrighted by their
@@ -16,7 +16,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
@@ -33,7 +33,6 @@
 #include "SharedFilesWnd.h"		// Needed for CSharedFilesWnd
 #include "Timer.h"				// Needed for CTimer
 #include "PartFile.h"			// Needed for CPartFile
-#include "updownclient.h"		// Needed for CUpDownClient
 
 #include "muuli_wdr.h"			// Needed for IDs
 #include "amuleDlg.h"			// Needed for CamuleDlg
@@ -68,8 +67,7 @@ BEGIN_EVENT_TABLE(CamuleGuiApp, wxApp)
 	EVT_MULE_TIMER(ID_CORE_TIMER_EVENT, CamuleGuiApp::OnCoreTimer)
 
 	EVT_MULE_NOTIFY(CamuleGuiApp::OnNotifyEvent)
-	EVT_MULE_LOGGING(CamuleGuiApp::OnLoggingEvent)
-	
+
 	// Async dns handling
 	EVT_MULE_INTERNAL(wxEVT_CORE_UDP_DNS_DONE, -1, CamuleGuiApp::OnUDPDnsDone)
 
@@ -111,9 +109,9 @@ CamuleGuiBase::~CamuleGuiBase()
 }
 
 
-void CamuleGuiBase::ShowAlert(wxString msg, wxString title, int flags)
+int CamuleGuiBase::ShowAlert(wxString msg, wxString title, int flags)
 {
-	wxMessageBox(msg, title, flags);
+	return wxMessageBox(msg, title, flags);
 }
 
 
@@ -183,21 +181,10 @@ int CamuleGuiBase::InitGui(bool geometry_enabled, wxString &geom_string)
 			}
 		}
 	}
-	
+
+	ResetTitle();
+
 	// Should default/last-used position be overridden?
-#ifdef SVNDATE
-	#ifdef CLIENT_GUI
-		m_FrameTitle = wxString::Format(wxT("aMule remote control %s %s"), wxT( VERSION ), wxT( SVNDATE ));
-	#else
-		m_FrameTitle = wxString::Format(wxT("aMule %s %s"), wxT( VERSION ), wxT( SVNDATE ));
-	#endif
-#else
-	#ifdef CLIENT_GUI
-		m_FrameTitle = wxString::Format(wxT("aMule remote control %s"), wxT( VERSION ));
-	#else
-		m_FrameTitle = wxString::Format(wxT("aMule %s"), wxT( VERSION ));
-	#endif
-#endif
 	if ( geometry_enabled ) {
 		amuledlg = new CamuleDlg(NULL, m_FrameTitle,
 		                         wxPoint(geometry_x,geometry_y),
@@ -207,6 +194,29 @@ int CamuleGuiBase::InitGui(bool geometry_enabled, wxString &geom_string)
 	}
 
 	return 0;
+}
+
+// Sets m_FrameTitle
+void CamuleGuiBase::ResetTitle()
+{
+#ifdef SVNDATE
+	#ifdef CLIENT_GUI
+		m_FrameTitle = CFormat(wxT("aMule remote control %s %s")) % wxT( VERSION ) % wxT( SVNDATE );
+	#else
+		m_FrameTitle = CFormat(wxT("aMule %s %s")) % wxT( VERSION ) % wxT( SVNDATE );
+	#endif
+#else
+	#ifdef CLIENT_GUI
+		m_FrameTitle = _("aMule remote control");
+	#else
+		m_FrameTitle = _("aMule");
+	#endif
+
+	if (thePrefs::ShowVersionOnTitle()) {
+		m_FrameTitle += wxT(' ');
+		m_FrameTitle += wxT( VERSION );
+	}
+#endif
 }
 
 
@@ -219,8 +229,22 @@ bool CamuleGuiBase::CopyTextToClipboard(wxString strText)
 		wxTheClipboard->SetData(new wxTextDataObject(strText));
 		wxTheClipboard->Close();
 	}
-	
+
 	return ClipBoardOpen;
+}
+
+
+void CamuleGuiBase::AddGuiLogLine(const wxString& line)
+{
+	if (amuledlg) {
+		while ( !m_logLines.empty() ) {
+			amuledlg->AddLogLine(m_logLines.front());
+			m_logLines.pop_front();
+		}
+		amuledlg->AddLogLine(line);
+	} else {
+		m_logLines.push_back(line);
+	}
 }
 
 
@@ -234,9 +258,9 @@ int CamuleGuiApp::InitGui(bool geometry_enable, wxString &geometry_string)
 }
 
 
-void CamuleGuiApp::ShowAlert(wxString msg, wxString title, int flags)
+int CamuleGuiApp::ShowAlert(wxString msg, wxString title, int flags)
 {
-	CamuleGuiBase::ShowAlert(msg, title, flags);
+	return CamuleGuiBase::ShowAlert(msg, title, flags);
 }
 
 
@@ -267,7 +291,7 @@ bool CamuleGuiApp::OnInit()
 	// Create the Core timer
 	core_timer = new CTimer(this,ID_CORE_TIMER_EVENT);
 	if (!core_timer) {
-		printf("Fatal Error: Failed to create Core Timer");
+		AddLogLineCS(_("Fatal Error: Failed to create Core Timer"));
 		OnExit();
 	}
 
@@ -308,6 +332,19 @@ wxString CamuleGuiApp::GetLog(bool reset)
 	return CamuleApp::GetLog(reset);
 }
 
+void CamuleGuiApp::AddDLPMessageLine(wxString &msg)
+{
+	wxString message;
+	time_t rawtime;
+	struct tm *timeinfo;
+	char tbuf[101];
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	strftime(tbuf, 100, "%Y-%m-%d %X: ", timeinfo);
+
+	message = wxString(tbuf, wxConvUTF8) + msg;
+	amuledlg->AddDLPMessageLine(message);
+}
 
 wxString CamuleGuiApp::GetServerLog(bool reset)
 {
@@ -322,38 +359,6 @@ void CamuleGuiApp::AddServerMessageLine(wxString &msg)
 {
 	amuledlg->AddServerMessageLine(msg);
 	CamuleApp::AddServerMessageLine(msg);
-}
-
-void CamuleGuiApp::AddDLPMessageLine(wxString &msg)
-{
-	wxString message;
-	time_t rawtime;
-	struct tm *timeinfo;
-	char tbuf[101];
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	strftime(tbuf, 100, "%Y-%m-%d %X: ", timeinfo);
-	
-	message = wxString(tbuf, wxConvUTF8) + msg;
-	amuledlg->AddDLPMessageLine(message);
-}
-
-void CamuleGuiApp::OnLoggingEvent(CLoggingEvent& evt)
-{
-	if (amuledlg) {
-		while ( !m_logLines.empty() ) {
-			QueuedLogLine entry = m_logLines.front();
-			amuledlg->AddLogLine( entry.show, entry.line );
-			m_logLines.pop_front();
-		}
-		
-		amuledlg->AddLogLine(evt.IsCritical(), evt.Message());
-	} else {
-		QueuedLogLine entry = { evt.Message(), evt.IsCritical() };
-		m_logLines.push_back( entry );
-	}
-			
-	CamuleApp::AddLogLine( evt.Message() );
 }
 
 #endif /* CLIENT_GUI */

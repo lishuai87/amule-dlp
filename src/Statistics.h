@@ -1,9 +1,9 @@
 //
 // This file is part of the aMule Project.
 //
-// Copyright (c) 2003-2009 aMule Team ( admin@amule.org / http://www.amule.org )
-// Copyright (c) 2002 Merkur ( devs@emule-project.net / http://www.emule-project.net )
-// Copyright (C) 2005-2009 DÈvai Tam·s ( gonosztopi@amule.org )
+// Copyright (c) 2003-2011 aMule Team ( admin@amule.org / http://www.amule.org )
+// Copyright (c) 2002-2011 Merkur ( devs@emule-project.net / http://www.emule-project.net )
+// Copyright (c) 2005-2011 D√©vai Tam√°s ( gonosztopi@amule.org )
 //
 // Any parts of this program derived from the xMule, lMule or eMule project,
 // or contributed by third-party developers are copyrighted by their
@@ -18,7 +18,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
@@ -27,18 +27,10 @@
 #ifndef STATISTICS_H
 #define STATISTICS_H
 
+#include "Constants.h"		// Needed for StatsGraphType
 #include "StatTree.h"		// Needed for CStatTreeItem* classes
-#include "GetTickCount.h"	// Needed for GetTickCount64()
 
 #include <deque>		// Needed for std::deque
-
-enum StatsGraphType {
-	GRAPH_INVALID = 0,
-	GRAPH_DOWN,
-	GRAPH_UP,
-	GRAPH_CONN,
-	GRAPH_KAD
-};
 
 typedef struct UpdateInfo {
 	double timestamp;
@@ -62,7 +54,7 @@ typedef struct HistoryRecord {
 } HR;
 
 
-#ifndef EC_REMOTE
+#ifndef CLIENT_GUI
 
 /**
  * Counts precise rate/average on added bytes/values.
@@ -223,9 +215,12 @@ class CUpDownClient;
 
 class CStatistics {
 	friend class CStatisticsDlg;	// to access CStatistics::GetTreeRoot()
- public: 
+ public:
 	CStatistics();
 	~CStatistics();
+
+	static void	Load();
+	static void	Save();
 
 	/* Statistics graph functions */
 
@@ -246,6 +241,7 @@ class CStatistics {
 	static	uint64	GetStartTime()				{ return s_uptime->GetTimerStart(); }
 
 	// Upload
+	static	uint64	GetTotalSentBytes()			{ return s_totalSent; }
 	static	uint64	GetSessionSentBytes()			{ return (*s_sessionUpload); }
 	static	void	AddUpOverheadFileRequest(uint32 size)	{ (*s_fileReqUpOverhead) += size; (*s_upOverheadRate) += size; }
 	static	void	AddUpOverheadSourceExchange(uint32 size){ (*s_sourceXchgUpOverhead) += size; (*s_upOverheadRate) += size; }
@@ -266,6 +262,7 @@ class CStatistics {
 	static	double	GetUploadRate()				{ return s_uploadrate->GetRate(); }
 
 	// Download
+	static	uint64	GetTotalReceivedBytes()			{ return s_totalReceived; }
 	static	uint64	GetSessionReceivedBytes()		{ return (*s_sessionDownload); }
 	static	void	AddDownOverheadFileRequest(uint32 size)	{ (*s_fileReqDownOverhead) += size; (*s_downOverheadRate) += size; }
 	static	void	AddDownOverheadSourceExchange(uint32 size){ (*s_sourceXchgDownOverhead) += size; (*s_downOverheadRate) += size; }
@@ -320,9 +317,9 @@ class CStatistics {
 	static	uint32	GetSharedFileCount()			{ return (*s_numberOfShared); }
 
 	// Kad nodes
-	static void		AddKadNode()					{ ++s_kadNodesCur; }
-	static void		RemoveKadNode()					{ --s_kadNodesCur; }
-	
+	static void	AddKadNode()				{ ++s_kadNodesCur; }
+	static void	RemoveKadNode()				{ --s_kadNodesCur; }
+
 
 	// Other
 	static	void	CalculateRates();
@@ -335,6 +332,8 @@ class CStatistics {
 
 			(*s_sessionDownload) += bytes;
 			(*s_downloadrate) += bytes;
+			s_totalReceived += bytes;
+			s_statsNeedSave = true;
 		}
 
 	static	void	AddSentBytes(uint32 bytes)
@@ -345,6 +344,8 @@ class CStatistics {
 
 			(*s_sessionUpload) += bytes;
 			(*s_uploadrate) += bytes;
+			s_totalSent += bytes;
+			s_statsNeedSave = true;
 		}
 
 	static	void	AddDownloadFromSoft(uint8 SoftType, uint32 bytes);
@@ -354,7 +355,7 @@ class CStatistics {
 	static	CECTag*	GetECStatTree(uint8 tree_capping_value)	{ return s_statTree->CreateECTag(tree_capping_value); }
 
 	void SetAverageMinutes(uint8 minutes) { average_minutes = minutes; }
-	
+
  private:
  	std::list<HR>	listHR;
 	typedef std::list<HR>::iterator		listPOS;
@@ -364,7 +365,7 @@ class CStatistics {
 
 	void ComputeAverages(HR **pphr, listRPOS pos, unsigned cntFilled,
 		double sStep, const std::vector<float *> &ppf, StatsGraphType which_graph);
- 
+
 	int GetPointsPerRange()
 	{
 		return (1280/2) - 80; // This used to be a calc. based on GUI width
@@ -376,7 +377,7 @@ class CStatistics {
 	CPreciseRateCounter	m_graphRunningAvgUp;
 	CPreciseRateCounter	m_graphRunningAvgKad;
 
-	
+
 	uint8 average_minutes;
 	int	nHistRanges;
 	int	bitsHistClockMask;
@@ -392,7 +393,7 @@ class CStatistics {
 	static	CStatTreeItemRateCounter*	s_downloadrate;
 
 	/* Tree-related functions */
-	
+
 	static	void	InitStatsTree();
 
 	static	CStatTreeItemBase*	GetTreeRoot()	{ return s_statTree; }
@@ -466,11 +467,17 @@ class CStatistics {
 	static	CStatTreeItemCounter*		s_sizeOfShare;
 
 	// Kad nodes
-	static uint64 s_kadNodesTotal;
-	static uint16 s_kadNodesCur;
+	static	uint64_t	s_kadNodesTotal;
+	static	uint16_t	s_kadNodesCur;
+
+	// Total sent/received bytes
+	static	uint64_t	s_totalSent;
+	static	uint64_t	s_totalReceived;
+
+	static	bool		s_statsNeedSave;
 };
 
-#else /* EC_REMOTE == CLIENT_GUI */
+#else /* CLIENT_GUI */
 
 class CECPacket;
 class CRemoteConnect;
@@ -486,6 +493,19 @@ enum StatDataIndex {
 	sdKadUsers,
 	sdED2KFiles,
 	sdKadFiles,
+	sdKadFirewalledUDP,
+	sdKadIndexedSources,
+	sdKadIndexedKeywords,
+	sdKadIndexedNotes,
+	sdKadIndexedLoad,
+	sdKadIPAdress,
+	sdBuddyStatus,
+	sdBuddyIP,
+	sdBuddyPort,
+	sdKadInLanMode,
+	sdTotalSentBytes,
+	sdTotalReceivedBytes,
+	sdSharedFileCount,
 
 	sdTotalItems
 };
@@ -499,42 +519,54 @@ private:
 	static uint64 s_start_time;
 	static uint64 s_statData[sdTotalItems];
 	uint8 average_minutes;
-	
+
  public:
 	CStatistics(CRemoteConnect &conn);
 	~CStatistics();
 
-	static	uint64	GetUptimeMillis()			{ return GetTickCount64() - s_start_time; }
-	static	uint64	GetUptimeSeconds()			{ return (GetTickCount64() - s_start_time) / 1000; }
+	static	uint64	GetUptimeMillis();
+	static	uint64	GetUptimeSeconds();
 
-	static	uint64	GetSessionSentBytes()			{ return 0; } // TODO
+	static	uint64	GetTotalSentBytes()			{ return s_statData[sdTotalSentBytes]; }
 	static	double	GetUploadRate()				{ return (double)s_statData[sdUpload]; }
 	static	double	GetUpOverheadRate()			{ return (double)s_statData[sdUpOverhead]; }
 
-	static	uint64	GetSessionReceivedBytes()		{ return 0; } // TODO
+	static	uint64	GetTotalReceivedBytes()			{ return s_statData[sdTotalReceivedBytes]; }
 	static	double	GetDownloadRate()			{ return (double)s_statData[sdDownload]; }
 	static	double	GetDownOverheadRate()			{ return (double)s_statData[sdDownOverhead]; }
 
 	static	uint32	GetWaitingUserCount()			{ return s_statData[sdWaitingClients]; }
 	static	uint32	GetBannedCount()			{ return s_statData[sdBannedClients]; }
 
-	static	uint32	GetSharedFileCount()			{ return 0; } // TODO
+	static	uint32	GetSharedFileCount()			{ return s_statData[sdSharedFileCount]; }
 
 	static	uint32	GetED2KUsers()			{ return s_statData[sdED2KUsers]; }
 	static	uint32	GetKadUsers() 			{ return s_statData[sdKadUsers]; }
 	static	uint32	GetED2KFiles()			{ return s_statData[sdED2KFiles]; }
 	static	uint32	GetKadFiles() 			{ return s_statData[sdKadFiles]; }
 
+	static	bool	IsFirewalledKadUDP()	{ return s_statData[sdKadFirewalledUDP] != 0; }
+	static	uint32	GetKadIndexedSources()	{ return s_statData[sdKadIndexedSources]; }
+	static	uint32	GetKadIndexedKeywords()	{ return s_statData[sdKadIndexedKeywords]; }
+	static	uint32	GetKadIndexedNotes()	{ return s_statData[sdKadIndexedNotes]; }
+	static	uint32	GetKadIndexedLoad()		{ return s_statData[sdKadIndexedLoad]; }
+	static	uint32	GetKadIPAdress()		{ return s_statData[sdKadIPAdress]; }
+	static	uint8	GetBuddyStatus()		{ return s_statData[sdBuddyStatus]; }
+	static	uint32	GetBuddyIP()			{ return s_statData[sdBuddyIP]; }
+	static	uint32	GetBuddyPort()			{ return s_statData[sdBuddyPort]; }
+	static	bool	IsKadRunningInLanMode()	{ return s_statData[sdKadInLanMode] != 0; }
+
 	static	void	UpdateStats(const CECPacket* stats);
 
-		void	UpdateStatsTree();
-		void	SetAverageMinutes(uint8 minutes)	{ average_minutes = minutes; }
-	
+	void	UpdateStatsTree();
+	void	RebuildStatTreeRemote(const CECTag *);
+	void	SetAverageMinutes(uint8 minutes)	{ average_minutes = minutes; }
+
  private:
 	static	CStatTreeItemBase*	GetTreeRoot()		{ return s_statTree; }
 };
 
-#endif /* !EC_REMOTE / EC_REMOTE */
+#endif /* !CLIENT_GUI / CLIENT_GUI */
 
 
 /**

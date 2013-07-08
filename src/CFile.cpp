@@ -1,8 +1,8 @@
 //
 // This file is part of the aMule Project.
 //
-// Copyright (c) 2003-2009 aMule Team ( admin@amule.org / http://www.amule.org )
-// Copyright (c) 1998 Vadim Zeitlin ( zeitlin@dptmaths.ens-cachan.fr )
+// Copyright (c) 2003-2011 aMule Team ( admin@amule.org / http://www.amule.org )
+// Copyright (c) 1998-2011 Vadim Zeitlin ( zeitlin@dptmaths.ens-cachan.fr )
 //
 // Any parts of this program derived from the xMule, lMule or eMule project,
 // or contributed by third-party developers are copyrighted by their
@@ -25,7 +25,7 @@
 
 
 #include "CFile.h"		// Interface declarations.
-#include "Logger.h"		// Needed for AddDebugLogLineM
+#include "Logger.h"		// Needed for AddDebugLogLineC
 #include <common/Path.h>	// Needed for CPath
 
 
@@ -135,7 +135,7 @@ inline void syscall_check(
 	const wxString& what)
 {
 	if (!check) {
-		AddDebugLogLineM(true, logCFile,
+		AddDebugLogLineC(logCFile,
 			CFormat(wxT("Error when %s (%s): %s"))
 				% what % filePath % wxSysErrorMsg());
 	}
@@ -148,7 +148,7 @@ CSeekFailureException::CSeekFailureException(const wxString& desc)
 
 
 CFile::CFile()
-	: m_fd(fd_invalid)
+	: m_fd(fd_invalid), m_safeWrite(false)
 {}
 
 
@@ -169,6 +169,10 @@ CFile::CFile(const wxString& fileName, OpenMode mode)
 CFile::~CFile()
 { 
 	if (IsOpened()) {
+		// If the writing gets aborted, dtor is still called.
+		// In this case do NOT replace the original file with the
+		// probably broken new one!
+		m_safeWrite = false;
 		Close(); 
 	}
 }
@@ -188,8 +192,6 @@ bool CFile::IsOpened() const
 
 const CPath& CFile::GetFilePath() const
 {
-	MULE_VALIDATE_STATE(IsOpened(), wxT("CFile: Cannot return path of closed file."));
-
 	return m_filePath;
 }
 
@@ -221,6 +223,13 @@ bool CFile::Open(const CPath& fileName, OpenMode mode, int accessMode)
 {
 	MULE_VALIDATE_PARAMS(fileName.IsOk(), wxT("CFile: Cannot open, empty path."));
 
+	if (IsOpened()) {
+		Close();	
+	}
+	
+	m_safeWrite = false;
+	m_filePath = fileName;
+
 #ifdef __linux__
 	int flags = O_BINARY | O_LARGEFILE;
 #else
@@ -244,6 +253,12 @@ bool CFile::Open(const CPath& fileName, OpenMode mode, int accessMode)
 			flags |= O_WRONLY | O_CREAT | O_TRUNC;
 			break;
 		
+		case write_safe:
+			flags |= O_WRONLY | O_CREAT | O_TRUNC;
+			m_filePath = m_filePath.AppendExt(wxT(".new"));
+			m_safeWrite = true;
+			break;
+		
 		case write_excl:
 			flags |= O_WRONLY | O_CREAT | O_EXCL;
 			break;
@@ -253,20 +268,25 @@ bool CFile::Open(const CPath& fileName, OpenMode mode, int accessMode)
         	break;
 	}
 	
-	if (IsOpened()) {
-		Close();	
-	}
-	
-
-	
-	Unicode2CharBuf tmpFileName = filename2char(fileName.GetRaw());
+	// Windows needs wide character file names
+#ifdef __WXMSW__
+	m_fd = _wopen(m_filePath.GetRaw().c_str(), flags, accessMode);
+#else
+	Unicode2CharBuf tmpFileName = filename2char(m_filePath.GetRaw());
 	wxASSERT_MSG(tmpFileName, wxT("Convertion failed in CFile::Open"));
-
-	m_filePath = fileName;
 	m_fd = open(tmpFileName, flags, accessMode);
+#endif
 	syscall_check(m_fd != fd_invalid, m_filePath, wxT("opening file"));
 	
 	return IsOpened();
+}
+
+
+void CFile::Reopen(OpenMode mode)
+{
+	if (!Open(m_filePath, mode)) {
+		throw CIOFailureException(wxString(wxT("Error reopening file")));
+	}
 }
 
 
@@ -277,7 +297,15 @@ bool CFile::Close()
 	bool closed = (close(m_fd) != -1);
 	syscall_check(closed, m_filePath, wxT("closing file"));
 	
-	m_fd = fd_invalid;	
+	m_fd = fd_invalid;
+
+	if (m_safeWrite) {
+		CPath filePathTemp(m_filePath);
+		m_filePath = m_filePath.RemoveExt();	// restore m_filePath for Reopen()
+		if (closed) {
+			closed = CPath::RenameFile(filePathTemp, m_filePath, true);
+		}
+	}
 	
 	return closed;
 }
@@ -393,18 +421,24 @@ uint64 CFile::GetAvailable() const
 }
 
 
-bool CFile::SetLength(size_t new_len)
+bool CFile::SetLength(uint64 new_len)
 {
 	MULE_VALIDATE_STATE(IsOpened(), wxT("CFile: Cannot set length when no file is open."));
 
 #ifdef __WXMSW__
-	int result = chsize(m_fd, new_len);
+#ifdef _MSC_VER
+// MSVC has a 64bit version
+	bool result = _chsize_s(m_fd, new_len) == 0;
 #else
-	int result = ftruncate(m_fd, new_len);
+// MingW has an old runtime without it
+	bool result = chsize(m_fd, new_len) == 0;
+#endif
+#else
+	bool result = ftruncate(m_fd, new_len) != -1;
 #endif
 
-	syscall_check((result != -1), m_filePath, wxT("truncating file"));
+	syscall_check(result, m_filePath, wxT("truncating file"));
 
-	return (result != -1);
+	return result;
 }
 // File_checked_for_headers

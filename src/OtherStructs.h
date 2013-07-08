@@ -1,8 +1,8 @@
 //
 // This file is part of the aMule Project.
 //
-// Copyright (c) 2003-2009 aMule Team ( admin@amule.org / http://www.amule.org )
-// Copyright (c) 2002 Merkur ( devs@emule-project.net / http://www.emule-project.net )
+// Copyright (c) 2003-2011 aMule Team ( admin@amule.org / http://www.amule.org )
+// Copyright (c) 2002-2011 Merkur ( devs@emule-project.net / http://www.emule-project.net )
 //
 // Any parts of this program derived from the xMule, lMule or eMule project,
 // or contributed by third-party developers are copyrighted by their
@@ -72,18 +72,6 @@ struct Requested_Block_Struct{
 	uint32	packedsize;
 	unsigned char	FileID[16];
 	uint32  transferred; // Barry - This counts bytes completed
-}
-#if defined(_MSC_VER) || defined(__SUNPRO_CC)
-;
-#pragma pack()
-#else
-__attribute__((__packed__));
-#endif
-
-struct Requested_File_Struct{
-	unsigned char	  fileid[16];
-	uint32	  lastasked;
-	uint8	  badrequests;
 }
 #if defined(_MSC_VER) || defined(__SUNPRO_CC)
 ;

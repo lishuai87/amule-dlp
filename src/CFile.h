@@ -1,8 +1,8 @@
 //
 // This file is part of the aMule Project.
 //
-// Copyright (c) 2003-2009 aMule Team ( admin@amule.org / http://www.amule.org )
-// Copyright (c) 1998 Vadim Zeitlin ( zeitlin@dptmaths.ens-cachan.fr )
+// Copyright (c) 2003-2011 aMule Team ( admin@amule.org / http://www.amule.org )
+// Copyright (c) 1998-2011 Vadim Zeitlin ( zeitlin@dptmaths.ens-cachan.fr )
 //
 // Any parts of this program derived from the xMule, lMule or eMule project,
 // or contributed by third-party developers are copyrighted by their
@@ -31,6 +31,9 @@
 
 #include <wx/file.h>		// Needed for constants
 
+#ifdef _MSC_VER  // silly warnings about deprecated functions
+#pragma warning(disable:4996)
+#endif
 
 /**
  * This class is a modified version of the wxFile class.
@@ -48,7 +51,7 @@ public:
 	enum { fd_invalid = -1, fd_stdin, fd_stdout, fd_stderr };
 
 	/** @see wxFile::OpenMode */
-	enum OpenMode { read, write, read_write, write_append, write_excl };
+	enum OpenMode { read, write, read_write, write_append, write_excl, write_safe };
 
 	
 	/**
@@ -82,11 +85,26 @@ public:
 	 * Calling Open with the openmodes 'write' or 'write_append' will 
 	 * create the specified file if it does not already exist.
 	 *
+	 * Calling Open with the openmode 'write_safe' will append ".new"
+	 * to the file name and otherwise work like 'write'.
+	 * On close it will be renamed to the original name.
+	 * Close() has to be called manually - destruct won't rename the file!
+	 *
 	 * If an accessMode is not explicitly specified, the accessmode
 	 * specified via CPreferences::GetFilePermissions will be used.
 	 */
 	bool Open(const CPath& path, OpenMode mode = read, int accessMode = wxS_DEFAULT);
 	bool Open(const wxString& path, OpenMode mode = read, int accessMode = wxS_DEFAULT);
+
+	/**
+	 * Reopens a file which was opened and closed before.
+	 *
+	 * @param mode The opening mode.
+	 * 
+	 * The filename used for last open is used again.
+	 * No return value - function throws on failure.
+	 */
+	void Reopen(OpenMode mode);
 	
 	/**
 	 * Calling Create is equivilant of calling open with OpenMode 'write'.
@@ -136,7 +154,7 @@ public:
 	/**
 	 * Resizes the file to the specified length.
 	 */
-	bool SetLength(size_t newLength);
+	bool SetLength(uint64 newLength);
 	
 	/**
 	 * @see CSafeFileIO::GetPosition
@@ -155,8 +173,6 @@ public:
 	/**
 	 * Returns the path of the currently opened file.
 	 * 
-	 * Calling this function on an closed file is
-	 * an illegal operation.
 	 */
 	const CPath& GetFilePath() const;
 	
@@ -186,6 +202,9 @@ private:
 	
 	//! The full path to the current file.
 	CPath m_filePath;
+
+	//! Are we using safe write mode?
+	bool m_safeWrite;
 };
 
 

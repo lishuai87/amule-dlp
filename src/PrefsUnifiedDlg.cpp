@@ -1,7 +1,7 @@
 //
 // This file is part of the aMule Project.
 //
-// Copyright (c) 2004-2009 aMule Team ( admin@amule.org / http://www.amule.org )
+// Copyright (c) 2004-2011 aMule Team ( admin@amule.org / http://www.amule.org )
 // Original author: Emilio Sandoz
 //
 // Any parts of this program derived from the xMule, lMule or eMule project,
@@ -17,7 +17,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
@@ -33,7 +33,7 @@
 
 #include "amule.h"				// Needed for theApp
 #include "amuleDlg.h"
-#include "Color.h"
+#include "MuleColour.h"
 #include "EditServerListDlg.h"
 #include "SharedFileList.h"		// Needed for CSharedFileList
 #include "StatisticsDlg.h"		// Needed for graph parameters, colors
@@ -49,7 +49,9 @@
 #include "KadDlg.h"				// Needed for CKadDlg
 #include "OScopeCtrl.h"			// Needed for OScopeCtrl
 #include "ServerList.h"
+#include "Statistics.h"
 #include "UserEvents.h"
+#include "PlatformSpecific.h"
 
 BEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDialog)
 	// Events
@@ -68,9 +70,8 @@ BEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDialog)
 	EVT_SPINCTRL(IDC_PORT,			PrefsUnifiedDlg::OnTCPClientPortChange)
 
 	// The rest. Organize it!
-	EVT_CHECKBOX(IDC_UDPDISABLE,		PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_UDPENABLE,		PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_CHECKDISKSPACE,	PrefsUnifiedDlg::OnCheckBoxChange)
-	EVT_CHECKBOX(IDC_USESKINFILES,		PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_ONLINESIG,		PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_REMOVEDEAD,		PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_AUTOSERVER,		PrefsUnifiedDlg::OnCheckBoxChange)
@@ -81,11 +82,17 @@ BEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDialog)
 	EVT_CHECKBOX(IDC_FILTERCOMMENTS,	PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_STARTNEXTFILE,		PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_ENABLETRAYICON,	PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_MACHIDEONCLOSE,	PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_VERTTOOLBAR,		PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_SUPPORT_PO,		PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_ENABLE_PO_OUTGOING,	PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_ENFORCE_PO_INCOMING,	PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_SHOWRATEONTITLE,	PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_NETWORKED2K,		PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_NETWORKKAD,		PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_UPNP_ENABLED,		PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_UPNP_WEBSERVER_ENABLED,PrefsUnifiedDlg::OnCheckBoxChange)
+
 
 	EVT_BUTTON(ID_PREFS_OK_TOP,		PrefsUnifiedDlg::OnOk)
 	EVT_BUTTON(ID_PREFS_CANCEL_TOP,		PrefsUnifiedDlg::OnCancel)
@@ -105,7 +112,6 @@ BEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDialog)
 	EVT_BUTTON(IDC_COLOR_BUTTON,		PrefsUnifiedDlg::OnButtonColorChange)
 	EVT_BUTTON(IDC_IPFILTERUPDATE,		PrefsUnifiedDlg::OnButtonIPFilterUpdate)
 	EVT_CHOICE(IDC_COLORSELECTOR,		PrefsUnifiedDlg::OnColorCategorySelected)
-	EVT_CHOICE(IDC_BROWSER,			PrefsUnifiedDlg::OnBrowserChange)
 	EVT_LIST_ITEM_SELECTED(ID_PREFSLISTCTRL,PrefsUnifiedDlg::OnPrefsPageChange)
 
 	EVT_INIT_DIALOG(PrefsUnifiedDlg::OnInitDialog)
@@ -122,6 +128,8 @@ BEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDialog)
 
 	EVT_LIST_ITEM_SELECTED(IDC_EVENTLIST,	PrefsUnifiedDlg::OnUserEventSelected)
 
+	EVT_CHOICE(IDC_LANGUAGE,		PrefsUnifiedDlg::OnLanguageChoice)
+
 	EVT_CLOSE(PrefsUnifiedDlg::OnClose)
 
 END_EVENT_TABLE()
@@ -132,7 +140,7 @@ END_EVENT_TABLE()
  *
  * This can be used enforce logical constraints by passing by
  * sending a check-box event for each checkbox, when transfering
- * to the UI. However, it should also be used for checkboxes that 
+ * to the UI. However, it should also be used for checkboxes that
  * have no side-effects other than enabling/disabling other
  * widgets in the preferences dialogs.
  */
@@ -144,7 +152,7 @@ void SendCheckBoxEvent(wxWindow* parent, int id)
 	wxCommandEvent evt(wxEVT_COMMAND_CHECKBOX_CLICKED, id);
 	evt.SetInt(widget->IsChecked() ? 1 : 0);
 
-	parent->ProcessEvent(evt);
+	parent->GetEventHandler()->ProcessEvent(evt);
 }
 
 
@@ -174,12 +182,12 @@ PrefsPage pages[] =
 	{ wxTRANSLATE("Interface"),			PreferencesGuiTweaksTab,	19 },
 	{ wxTRANSLATE("Statistics"),		PreferencesStatisticsTab,	10 },
 	{ wxTRANSLATE("Proxy"),				PreferencesProxyTab,		24 },
-	{ wxTRANSLATE("Filters"),			PreferencesMessagesTab,	23 },
+	{ wxTRANSLATE("Filters"),			PreferencesFilteringTab,	23 },
 	{ wxTRANSLATE("Remote Controls"),	PreferencesRemoteControlsTab,	11 },
 	{ wxTRANSLATE("Online Signature"),	PreferencesOnlineSigTab,	21 },
 	{ wxTRANSLATE("Advanced"),			PreferencesaMuleTweaksTab,	12 },
 	{ wxTRANSLATE("Events"),			PreferencesEventsTab,		5 },
-	{ wxTRANSLATE("DLP"),				PreferencesDLPTab,			5}
+	{ wxTRANSLATE("DLP"),				PreferencesDLPTab,		5 }
 #ifdef __DEBUG__
 	,{ wxTRANSLATE("Debugging"),		PreferencesDebug,			25 }
 #endif
@@ -193,7 +201,7 @@ wxDialog(parent, -1, _("Preferences"),
 	wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER)
 {
 	preferencesDlgTop(this, false);
-	
+
 	m_PrefsIcons = CastChild(ID_PREFSLISTCTRL, wxListCtrl);
 	wxImageList *icon_list = new wxImageList(16, 16);
 	m_PrefsIcons->AssignImageList(icon_list, wxIMAGE_LIST_SMALL);
@@ -213,14 +221,14 @@ wxDialog(parent, -1, _("Preferences"),
 		icon_list->Add(amuleSpecial(pages[i].m_imageidx));
 		m_PrefsIcons->InsertItem(i, wxGetTranslation(pages[i].m_title), i);
 	}
-	
+
 	// Set list-width so that there aren't any scrollers
 	m_PrefsIcons->SetColumnWidth(0, wxLIST_AUTOSIZE);
 	m_PrefsIcons->SetMinSize(wxSize(m_PrefsIcons->GetColumnWidth(0) + 10, -1));
 	m_PrefsIcons->SetMaxSize(wxSize(m_PrefsIcons->GetColumnWidth(0) + 10, -1));
 
 	// Now add the pages and calculate the minimum size
-	wxPanel * DefaultWidget;
+	wxPanel * DefaultWidget = NULL;
 	for (unsigned int i = 0; i < itemsof(pages); ++i) {
 		// Create a container widget and the contents of the page
 		wxPanel * Widget = new wxPanel(this, -1);
@@ -236,13 +244,16 @@ wxDialog(parent, -1, _("Preferences"),
 
 		if (pages[i].m_function == PreferencesGeneralTab) {
 			// This must be done now or pages won't Fit();
-			#ifdef __WXMSW__ 
+			#ifdef __WXMSW__
 				CastChild(IDC_BROWSERTABS, wxCheckBox)->Enable(false);
-				wxChoice *browserCheck = CastChild(IDC_BROWSER, wxChoice);
-				browserCheck->Clear();
-				browserCheck->Append(_("System default"));
-				browserCheck->Append(_("User Defined"));
 			#endif /* __WXMSW__ */
+			CastChild(IDC_PREVIEW_NOTE, wxStaticText)->SetLabel(_("The following variables will be substituted:\n    %PARTFILE - full path to the file\n    %PARTNAME - file name only"));
+			#ifdef __WXMAC__
+				FindWindow(IDC_ENABLETRAYICON)->Show(false);
+				FindWindow(IDC_MINTRAY)->Show(false);
+			#else
+				FindWindow(IDC_MACHIDEONCLOSE)->Show(false);
+			#endif
 		} else if (pages[i].m_function == PreferencesEventsTab) {
 
 #define USEREVENTS_REPLACE_VAR(VAR, DESC, CODE)	+ wxString(wxT("\n  %") VAR wxT(" - ")) + wxGetTranslation(DESC)
@@ -259,6 +270,11 @@ wxDialog(parent, -1, _("Preferences"),
 						USEREVENTS_FIRST_ID + idx * USEREVENTS_IDS_PER_EVENT);
 					switch (idx) {
 						USEREVENTS_EVENTLIST()
+						/* This macro expands to handle all user event types. Here is an example:
+						   case CUserEvents::NewChatSession: {
+						       CreateEventPanels(idx, wxString(wxT("\n %SENDER - ")) + wxTRANSLATE("Message sender."), Widget);
+						       break;
+						   } */
 					}
 				}
 			}
@@ -268,13 +284,22 @@ wxDialog(parent, -1, _("Preferences"),
 			m_IndexServerTab = i;
 			m_ServerWidget = Widget;
 		}
+		else if (pages[i].m_function == PreferencesaMuleTweaksTab) {
+			wxStaticText *txt = CastChild(IDC_AMULE_TWEAKS_WARNING, wxStaticText);
+			// Do not wrap this line, Windows _() can't handle wrapped strings
+			txt->SetLabel(_("Do not change these setting unless you know\nwhat you are doing, otherwise you can easily\nmake things worse for yourself.\n\naMule will run fine without adjusting any of\nthese settings."));
+			#if defined CLIENT_GUI || !PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
+				CastChild(IDC_PREVENT_SLEEP, wxCheckBox)->Enable(false);
+				thePrefs::SetPreventSleepWhileDownloading(false);
+			#endif
+		}
 #ifdef __DEBUG__
 		else if (pages[i].m_function == PreferencesDebug) {
-			int count = CLogger::GetDebugCategoryCount();
+			int count = theLogger.GetDebugCategoryCount();
 			wxCheckListBox* list = CastChild( ID_DEBUGCATS, wxCheckListBox );
 
 			for ( int j = 0; j < count; j++ ) {
-				list->Append( CLogger::GetDebugCategory( j ).GetName() );
+				list->Append( theLogger.GetDebugCategory( j ).GetName() );
 			}
 		}
 #endif
@@ -297,7 +322,7 @@ wxDialog(parent, -1, _("Preferences"),
 		prefs_sizer->Detach(Widget);
 		Widget->Show(false);
 	}
-	
+
 	// Default to the General tab
 	m_CurrentPanel = DefaultWidget;
 	prefs_sizer->Add(DefaultWidget, 0, wxGROW|wxEXPAND);
@@ -323,8 +348,8 @@ wxDialog(parent, -1, _("Preferences"),
 	for ( ; it != thePrefs::s_CfgList.end(); ++it ) {
 		// Checking for failures
 		if ( !it->second->ConnectToWidget(it->first, this) ) {
-			printf("Failed to connect Cfg to widget with the ID %d and key %s\n",
-				it->first, (const char *)unicode2char(it->second->GetKey()));
+			AddLogLineNS(CFormat(_("Failed to connect Cfg to widget with the ID %d and key %s"))
+				% it->first % it->second->GetKey());
 		}
 	}
 	Fit();
@@ -332,10 +357,6 @@ wxDialog(parent, -1, _("Preferences"),
 	// It must not be resized to something smaller than what it currently is
 	wxSize size = GetClientSize();
 	SetSizeHints(size.GetWidth(), size.GetHeight());
-	
-	#ifdef __WXMSW__
-		FindWindow(IDC_VERTTOOLBAR)->Enable(false);
-	#endif
 
 	// Position the dialog.
 	Center();
@@ -376,23 +397,24 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	for ( ; it != thePrefs::s_CfgList.end(); ++it ) {
 		// Checking for failures
 		if ( !it->second->TransferToWindow() ) {
-			printf("Failed to transfer data from Cfg to Widget with the ID %d and key %s\n",
-				it->first, (const char *)unicode2char(it->second->GetKey()));
+			AddLogLineNS(CFormat(_("Failed to transfer data from Cfg to Widget with the ID %d and key %s"))
+				% it->first % it->second->GetKey());
 		}
 	}
 
 	m_ShareSelector->SetSharedDirectories(&theApp->glob_prefs->shareddir_list);
 
 	for ( int i = 0; i < cntStatColors; i++ ) {
-		thePrefs::s_colors[i] = CStatisticsDlg::acrStat[i];
-		thePrefs::s_colors_ref[i] = CStatisticsDlg::acrStat[i];
+		thePrefs::s_colors[i] = CMuleColour(CStatisticsDlg::acrStat[i]).GetULong();
+		thePrefs::s_colors_ref[i] = CMuleColour(CStatisticsDlg::acrStat[i]).GetULong();
 	}
-	
+
 	// Connection tab
 	wxSpinEvent e;
 	OnTCPClientPortChange(e);
-	
+
 	// Proxy tab initialization
+	FindWindow(ID_PROXY_TYPE)->SetToolTip(_("The type of proxy you are connecting to"));
 	if (!CastChild(ID_PROXY_ENABLE_PROXY, wxCheckBox)->IsChecked()) {
 		FindWindow(ID_PROXY_TYPE)->Enable(false);
 		FindWindow(ID_PROXY_NAME)->Enable(false);
@@ -404,75 +426,101 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	}
 	// This option from the proxy tab is currently unused
 	FindWindow(ID_PROXY_AUTO_SERVER_CONNECT_WITHOUT_PROXY)->Enable(false);
-	
+
 	// Enable/Disable some controls
-	bool customBrowser =
-		CastChild(IDC_BROWSER, wxChoice)->GetSelection() ==
-		(int)CastChild(IDC_BROWSER, wxChoice)->GetCount() - 1;
-	FindWindow( IDC_BROWSERSELF )->Enable( customBrowser );
-	FindWindow( IDC_SELBROWSER )->Enable( customBrowser );
-	#ifndef __WXMSW__
-		FindWindow( IDC_BROWSERTABS )->Enable( !customBrowser );
-	#endif
 	FindWindow( IDC_MINDISKSPACE )->Enable( thePrefs::IsCheckDiskspaceEnabled() );
-	FindWindow( IDC_SKIN )->Enable( thePrefs::UseSkins() );
 	FindWindow( IDC_OSDIR )->Enable( thePrefs::IsOnlineSignatureEnabled() );
 	FindWindow( IDC_OSUPDATE )->Enable( thePrefs::IsOnlineSignatureEnabled() );
-	FindWindow( IDC_UDPPORT )->Enable( !thePrefs::s_UDPDisable );
+	FindWindow( IDC_UDPENABLE )->Enable( !thePrefs::GetNetworkKademlia());
+	FindWindow( IDC_UDPPORT )->Enable( thePrefs::s_UDPEnable );
 	FindWindow( IDC_SERVERRETRIES )->Enable( thePrefs::DeadServer() );
 	FindWindow( IDC_STARTNEXTFILE_SAME )->Enable(thePrefs::StartNextFile());
+	FindWindow( IDC_STARTNEXTFILE_ALPHA )->Enable(thePrefs::StartNextFile());
 
-#ifdef __WXMAC__
-	FindWindow(IDC_ENABLETRAYICON)->Enable(false);
-	FindWindow(IDC_MINTRAY)->Enable(false);
-#else
+	FindWindow(IDC_MACHIDEONCLOSE)->Enable(true);
+	FindWindow(IDC_EXIT)->Enable(!thePrefs::HideOnClose());
+	if (!thePrefs::HideOnClose()) {
+		CastChild(IDC_EXIT, wxCheckBox)->SetValue(false);
+	}
+
 	FindWindow(IDC_MINTRAY)->Enable(thePrefs::UseTrayIcon());
-#endif
 
 	if (!CastChild(IDC_MSGFILTER, wxCheckBox)->IsChecked()) {
 		FindWindow(IDC_MSGFILTER_ALL)->Enable(false);
 		FindWindow(IDC_MSGFILTER_NONSECURE)->Enable(false);
 		FindWindow(IDC_MSGFILTER_NONFRIENDS)->Enable(false);
-		FindWindow(IDC_MSGFILTER_WORD)->Enable(false);		
+		FindWindow(IDC_MSGFILTER_WORD)->Enable(false);
 		FindWindow(IDC_MSGWORD)->Enable(false);
 	} else if (CastChild(IDC_MSGFILTER_ALL, wxCheckBox)->IsChecked()) {
 		FindWindow(IDC_MSGFILTER_NONSECURE)->Enable(false);
 		FindWindow(IDC_MSGFILTER_NONFRIENDS)->Enable(false);
-		FindWindow(IDC_MSGFILTER_WORD)->Enable(false);		
-		FindWindow(IDC_MSGWORD)->Enable(false);	
+		FindWindow(IDC_MSGFILTER_WORD)->Enable(false);
+		FindWindow(IDC_MSGWORD)->Enable(false);
 	}
 
 	FindWindow(IDC_MSGWORD)->Enable(CastChild(IDC_MSGFILTER_WORD, wxCheckBox)->IsChecked());
 	FindWindow(IDC_COMMENTWORD)->Enable(CastChild(IDC_FILTERCOMMENTS, wxCheckBox)->IsChecked());
+
+#ifdef CLIENT_GUI
+	// Disable dirpickers unless it's a localhost connection
+	if (!theApp->m_connect->IsConnectedToLocalHost()) {
+		FindWindow(IDC_SELINCDIR)->Enable(false);
+		FindWindow(IDC_SELTEMPDIR)->Enable(false);
+	}
+#endif
 
 	// Protocol obfuscation
 	::SendCheckBoxEvent(this, IDC_SUPPORT_PO);
 	::SendCheckBoxEvent(this, IDC_ENABLE_PO_OUTGOING);
 	::SendCheckBoxEvent(this, IDC_ENFORCE_PO_INCOMING);
 
+#ifndef ENABLE_IP2COUNTRY
+	CastChild(IDC_SHOW_COUNTRY_FLAGS, wxCheckBox)->Enable(false);
+	thePrefs::SetGeoIPEnabled(false);
+#endif
+
+#ifdef __SVN__
+	// Version is always shown on the title in development versions
+	CastChild(IDC_SHOWVERSIONONTITLE, wxCheckBox)->SetValue(true);
+	CastChild(IDC_SHOWVERSIONONTITLE, wxCheckBox)->Enable(false);
+#endif
+
+	// Show rates on title
+	FindWindow(IDC_RATESBEFORETITLE)->Enable(thePrefs::GetShowRatesOnTitle() != 0);
+	FindWindow(IDC_RATESAFTERTITLE)->Enable(thePrefs::GetShowRatesOnTitle() != 0);
+	CastChild(IDC_SHOWRATEONTITLE, wxCheckBox)->SetValue(thePrefs::GetShowRatesOnTitle() != 0);
+	CastChild(IDC_RATESBEFORETITLE, wxRadioButton)->SetValue(thePrefs::GetShowRatesOnTitle() == 2);
+	CastChild(IDC_RATESAFTERTITLE, wxRadioButton)->SetValue(thePrefs::GetShowRatesOnTitle() != 2);
+
 	// UPNP
 #ifndef ENABLE_UPNP
-	FindWindow(IDC_UPNP_ENABLED)->Enable(false);	
+	FindWindow(IDC_UPNP_ENABLED)->Enable(false);
 	FindWindow(IDC_UPNPTCPPORT)->Enable(false);
+	FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(false);
 	thePrefs::SetUPnPEnabled(false);
-	// TODO: grey out "UPnP TCP Port", "Webserver UPnP TCP Port"
-	FindWindow(IDC_UPNP_WEBSERVER_ENABLED)->Enable(false);	
+	FindWindow(IDC_UPNP_WEBSERVER_ENABLED)->Enable(false);
 	FindWindow(IDC_WEBUPNPTCPPORT)->Enable(false);
+	FindWindow(IDC_WEBUPNPTCPPORTTEXT)->Enable(false);
 	thePrefs::SetUPnPWebServerEnabled(false);
 	FindWindow(IDC_UPNP_EC_ENABLED)->Enable(false);
 	thePrefs::SetUPnPECEnabled(false);
+#else
+	FindWindow(IDC_UPNPTCPPORT)->Enable(thePrefs::GetUPnPEnabled());
+	FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(thePrefs::GetUPnPEnabled());
+	FindWindow(IDC_WEBUPNPTCPPORT)->Enable(thePrefs::GetUPnPWebServerEnabled());
+	FindWindow(IDC_WEBUPNPTCPPORTTEXT)->Enable(thePrefs::GetUPnPWebServerEnabled());
 #endif
 
 #ifdef __DEBUG__
 	// Set debugging toggles
-	int count = CLogger::GetDebugCategoryCount();
+	int count = theLogger.GetDebugCategoryCount();
 	wxCheckListBox* list = CastChild( ID_DEBUGCATS, wxCheckListBox );
 
 	for ( int i = 0; i < count; i++ ) {
-		list->Check( i, CLogger::GetDebugCategory( i ).IsEnabled() );
+		list->Check( i, theLogger.GetDebugCategory( i ).IsEnabled() );
 	}
 #endif
-	
+
 	return true;
 }
 
@@ -484,8 +532,8 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 	for ( ; it != thePrefs::s_CfgList.end(); ++it ) {
 		// Checking for failures
 		if ( !it->second->TransferFromWindow() ) {
-			printf("Failed to transfer data from Widget to Cfg with the ID %d and key %s\n",
-				it->first, (const char *)unicode2char(it->second->GetKey()));
+			AddLogLineNS(CFormat(_("Failed to transfer data from Widget to Cfg with the ID %d and key %s"))
+				% it->first % it->second->GetKey());
 		}
 	}
 
@@ -503,19 +551,21 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 
 #ifdef __DEBUG__
 	// Get debugging toggles
-	int count = CLogger::GetDebugCategoryCount();
+	int count = theLogger.GetDebugCategoryCount();
 	wxCheckListBox* list = CastChild( ID_DEBUGCATS, wxCheckListBox );
 
 	for ( int i = 0; i < count; i++ ) {
-		CLogger::SetEnabled( CLogger::GetDebugCategory( i ).GetType(), list->IsChecked( i ) );
+		theLogger.SetEnabled( theLogger.GetDebugCategory( i ).GetType(), list->IsChecked( i ) );
 	}
 #endif
+
+	thePrefs::SetShowRatesOnTitle(CastChild(IDC_SHOWRATEONTITLE, wxCheckBox)->GetValue() ? (CastChild(IDC_RATESBEFORETITLE, wxRadioButton)->GetValue() ? 2 : 1) : 0);
 
 	#ifdef CLIENT_GUI
 	// Send preferences to core.
 	theApp->glob_prefs->SendToRemote();
 	#endif
-	
+
 	return true;
 }
 
@@ -538,7 +588,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent& WXUNUSED(event))
 
 	bool restart_needed = false;
 	wxString restart_needed_msg = _("aMule must be restarted to enable these changes:\n\n");
-	
+
 	// do sanity checking, special processing, and user notifications here
 	thePrefs::CheckUlDlRatio();
 
@@ -552,13 +602,26 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent& WXUNUSED(event))
 		restart_needed_msg += _("- UDP port changed.\n");
 	}
 
+	if (CfgChanged(IDC_EXT_CONN_TCP_PORT)) {
+		restart_needed = true;
+		restart_needed_msg += _("- External connect port changed.\n");
+	}
+	if (CfgChanged(IDC_EXT_CONN_ACCEPT)) {
+		restart_needed = true;
+		restart_needed_msg += _("- External connect acceptance changed.\n");
+	}
+	if (CfgChanged(IDC_EXT_CONN_IP)) {
+		restart_needed = true;
+		restart_needed_msg += _("- External connect interface changed.\n");
+	}
+
 	// Force port checking
 	thePrefs::SetPort(thePrefs::GetPort());
-	
-	if ((CPath::GetFileSize(theApp->ConfigDir + wxT("addresses.dat")) == 0) && 
+
+	if ((CPath::GetFileSize(theApp->ConfigDir + wxT("addresses.dat")) == 0) &&
 		CastChild(IDC_AUTOSERVER, wxCheckBox)->IsChecked() ) {
 		thePrefs::UnsetAutoServerStart();
-		wxMessageBox(_("Your Auto-update server list is empty.\n'Auto-update server list at startup will be disabled."),
+		wxMessageBox(_("Your Auto-update server list is empty.\n'Auto-update server list at startup' will be disabled."),
 			_("Message"), wxOK | wxICON_INFORMATION, this);
 	}
 
@@ -567,7 +630,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent& WXUNUSED(event))
 
 		wxMessageBox( _("You have enabled external connections but have not specified a password.\nExternal connections cannot be enabled unless a valid password is specified."));
 	}
-	
+
 	// save the preferences on ok
 	theApp->glob_prefs->Save();
 
@@ -601,18 +664,23 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent& WXUNUSED(event))
 		theApp->SetOSFiles( widget->GetValue() );
 	}
 
-	if (CfgChanged(IDC_IPFCLIENTS) || CfgChanged(IDC_IPFSERVERS) || CfgChanged(ID_IPFILTERLEVEL)) {
-		if (thePrefs::IsFilteringClients()) {
-			theApp->clientlist->FilterQueues();
-		}
-		if (thePrefs::IsFilteringServers()) {
-			theApp->serverlist->FilterServers();
-		}
+	if (CfgChanged(IDC_IPFCLIENTS) && thePrefs::IsFilteringClients()) {
+		theApp->clientlist->FilterQueues();
 	}
+
+	if (CfgChanged(IDC_IPFSERVERS) && thePrefs::IsFilteringServers()) {
+		theApp->serverlist->FilterServers();
+	}
+
+	if (CfgChanged(ID_IPFILTERLEVEL)) {
+		theApp->ipfilter->Reload();
+	}
+
+	theApp->ResetTitle();
 
 	if (thePrefs::GetShowRatesOnTitle()) {
 		// This avoids a 5 seconds delay to show the title
-		theApp->amuledlg->SetTitle(theApp->m_FrameTitle + wxT(" -- ") + _("Up: 0.0 | Down: 0.0"));
+		theApp->amuledlg->ShowTransferRate();
 	} else {
 		// This resets the title
 		theApp->amuledlg->SetTitle(theApp->m_FrameTitle);
@@ -640,36 +708,41 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent& WXUNUSED(event))
 		theApp->amuledlg->m_statisticswnd->SetARange( false, thePrefs::GetMaxGraphUploadRate() );
 	}
 
-	if (CfgChanged(IDC_SKIN) || CfgChanged(IDC_USESKINFILES)) {
+	if (CfgChanged(IDC_SKIN)) {
 		theApp->amuledlg->Create_Toolbar(thePrefs::VerticalToolbar());
 	}
 
 	if (!thePrefs::GetNetworkED2K() && theApp->IsConnectedED2K()) {
 		theApp->DisconnectED2K();
 	}
-	
+
 	if (!thePrefs::GetNetworkKademlia() && theApp->IsConnectedKad()) {
 		theApp->StopKad();
-	}	
+	}
 
 	if (!thePrefs::GetNetworkED2K() && !thePrefs::GetNetworkKademlia()) {
 		wxMessageBox(
 			_("Both eD2k and Kad network are disabled.\nYou won't be able to connect until you enable at least one of them."));
-	}	
-	
+	}
+
 	if (thePrefs::GetNetworkKademlia() && thePrefs::IsUDPDisabled()) {
 		wxMessageBox(_("Kad will not start if your UDP port is disabled.\nEnable UDP port or disable Kad."),
 			 _("Message"), wxOK | wxICON_INFORMATION, this);
 	}
-	
+
 	if (CfgChanged(IDC_NETWORKKAD) || CfgChanged(IDC_NETWORKED2K)) {
 		theApp->amuledlg->DoNetworkRearrange();
 	}
-	
-	if (restart_needed) {
-		wxMessageBox(restart_needed_msg + _("\nYou MUST restart aMule now.\nIf you do not restart now, don't complain if anything bad happens.\n"), _("WARNING"),wxICON_EXCLAMATION,this);
+
+	if (CfgChanged(IDC_SHOW_COUNTRY_FLAGS)) {
+		theApp->amuledlg->EnableIP2Country();
 	}
-	
+
+	if (restart_needed) {
+		wxMessageBox(restart_needed_msg + _("\nYou MUST restart aMule now.\nIf you do not restart now, don't complain if anything bad happens.\n"), 
+			_("WARNING"), wxOK | wxICON_EXCLAMATION, this);
+	}
+
 	Show(false);
 }
 
@@ -677,7 +750,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent& WXUNUSED(event))
 void PrefsUnifiedDlg::OnClose(wxCloseEvent& event)
 {
 	Show(false);
-	
+
 	// Try to keep the window alive when possible
 	if (event.CanVeto()) {
 		event.Veto();
@@ -685,14 +758,14 @@ void PrefsUnifiedDlg::OnClose(wxCloseEvent& event)
 		if (theApp->amuledlg) {
 			theApp->amuledlg->m_prefsDialog = NULL;
 		}
-	
+
 		// Un-Connect the Cfgs
 		thePrefs::CFGMap::iterator it = thePrefs::s_CfgList.begin();
 		for (; it != thePrefs::s_CfgList.end(); ++it) {
 			// Checking for failures
 			it->second->ConnectToWidget( 0 );
 		}
-		
+
 		Destroy();
 	}
 }
@@ -709,7 +782,7 @@ void PrefsUnifiedDlg::OnCancel(wxCommandEvent& WXUNUSED(event))
 void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent& event)
 {
 	bool	value = event.IsChecked();
-	int	id = event.GetId();	
+	int	id = event.GetId();
 
 	// Check if this checkbox is one of the User Events checkboxes
 	if (id >= USEREVENTS_FIRST_ID &&
@@ -722,17 +795,36 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent& event)
 	}
 
 	switch ( id ) {
-		case IDC_UDPDISABLE:
-			// UDP is disable rather than enable, so we flip the value
-			FindWindow( IDC_UDPPORT )->Enable(!value);
+		case IDC_UDPENABLE:
+			FindWindow( IDC_UDPPORT )->Enable(value);
 			break;
-			
+
+		case IDC_UPNP_ENABLED:
+			FindWindow(IDC_UPNPTCPPORT)->Enable(value);
+			FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(value);
+			break;
+
+		case IDC_UPNP_WEBSERVER_ENABLED:
+			FindWindow(IDC_WEBUPNPTCPPORT)->Enable(value);
+			FindWindow(IDC_WEBUPNPTCPPORTTEXT)->Enable(value);
+			break;
+
+		case IDC_NETWORKKAD: {
+			wxCheckBox * udpPort = (wxCheckBox *) FindWindow(IDC_UDPENABLE);
+			if (value) {
+				// Kad enabled: disable check box, turn UDP on, enable port spin control
+				udpPort->Enable(false);
+				udpPort->SetValue(true);
+				FindWindow(IDC_UDPPORT)->Enable(true);
+			} else {
+				// Kad disabled: enable check box
+				udpPort->Enable(true);
+			}
+			break;
+		}
+
 		case IDC_CHECKDISKSPACE:
 			FindWindow( IDC_MINDISKSPACE )->Enable(value);
-			break;	
-		
-		case IDC_USESKINFILES:
-			FindWindow( IDC_SKIN )->Enable(value);;
 			break;
 
 		case IDC_ONLINESIG:
@@ -745,7 +837,7 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent& event)
 			break;
 
 		case IDC_AUTOSERVER:
-			if ((CPath::GetFileSize(theApp->ConfigDir + wxT("addresses.dat")) == 0) && 
+			if ((CPath::GetFileSize(theApp->ConfigDir + wxT("addresses.dat")) == 0) &&
 				CastChild(event.GetId(), wxCheckBox)->IsChecked() ) {
 				wxMessageBox(_("Your Auto-update servers list is in blank.\nPlease fill in at least one URL to point to a valid server.met file.\nClick on the button \"List\" by this checkbox to enter an URL."),
 					_("Message"), wxOK | wxICON_INFORMATION);
@@ -758,7 +850,7 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent& event)
 			FindWindow(IDC_MSGFILTER_ALL)->Enable(value);
 			FindWindow(IDC_MSGFILTER_NONSECURE)->Enable(value);
 			FindWindow(IDC_MSGFILTER_NONFRIENDS)->Enable(value);
-			FindWindow(IDC_MSGFILTER_WORD)->Enable(value);		
+			FindWindow(IDC_MSGFILTER_WORD)->Enable(value);
 			if (value) {
 				FindWindow(IDC_MSGWORD)->Enable(
 					CastChild(IDC_MSGFILTER_WORD, wxCheckBox)->IsChecked());
@@ -766,12 +858,12 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent& event)
 				FindWindow(IDC_MSGWORD)->Enable(false);
 			}
 			break;
-		
+
 		case IDC_MSGFILTER_ALL:
 			// Toogle filtering by data.
 			FindWindow(IDC_MSGFILTER_NONSECURE)->Enable(!value);
 			FindWindow(IDC_MSGFILTER_NONFRIENDS)->Enable(!value);
-			FindWindow(IDC_MSGFILTER_WORD)->Enable(!value);		
+			FindWindow(IDC_MSGFILTER_WORD)->Enable(!value);
 			if (!value) {
 				FindWindow(IDC_MSGWORD)->Enable(
 					CastChild(IDC_MSGFILTER_WORD, wxCheckBox)->IsChecked());
@@ -779,7 +871,7 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent& event)
 				FindWindow(IDC_MSGWORD)->Enable(false);
 			}
 			break;
-		
+
 		case IDC_MSGFILTER_WORD:
 			// Toogle filter word list.
 			FindWindow(IDC_MSGWORD)->Enable(value);
@@ -794,16 +886,22 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent& event)
 			FindWindow(ID_PROXY_NAME)->Enable(value);
 			FindWindow(ID_PROXY_PORT)->Enable(value);
 			break;
-			
+
 		case ID_PROXY_ENABLE_PASSWORD:
 			FindWindow(ID_PROXY_USER)->Enable(value);
 			FindWindow(ID_PROXY_PASSWORD)->Enable(value);
 			break;
-			
+
 		case IDC_STARTNEXTFILE:
 			FindWindow(IDC_STARTNEXTFILE_SAME)->Enable(value);
+			FindWindow(IDC_STARTNEXTFILE_ALPHA)->Enable(value);
 			break;
-		
+
+		case IDC_MACHIDEONCLOSE:
+			FindWindow(IDC_EXIT)->Enable(!value);
+			CastChild(IDC_EXIT, wxCheckBox)->SetValue(!value && thePrefs::IsConfirmExitEnabled());
+			break;
+
 		case IDC_ENABLETRAYICON:
 			FindWindow(IDC_MINTRAY)->Enable(value);
 			if (value) {
@@ -813,15 +911,17 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent& event)
 			}
 			thePrefs::SetUseTrayIcon(value);
 			break;
-		
+
 		case ID_PROXY_AUTO_SERVER_CONNECT_WITHOUT_PROXY:
 			break;
+
 		case IDC_VERTTOOLBAR:
 			theApp->amuledlg->Create_Toolbar(value);
 			// Update the first tool (conn button)
 			theApp->amuledlg->ShowConnectionState();
+			theApp->amuledlg->Layout();
 			break;
-	
+
 		case IDC_ENFORCE_PO_INCOMING:
 			FindWindow(IDC_ENABLE_PO_OUTGOING)->Enable(!value);
 			break;
@@ -834,7 +934,12 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent& event)
 		case IDC_SUPPORT_PO:
 			FindWindow(IDC_ENABLE_PO_OUTGOING)->Enable(value);
 			break;
-		
+
+		case IDC_SHOWRATEONTITLE:
+			FindWindow(IDC_RATESBEFORETITLE)->Enable(value);
+			FindWindow(IDC_RATESAFTERTITLE)->Enable(value);
+			break;
+
 		case IDC_NETWORKED2K: {
 			EnableServerTab(value);
 			wxSpinEvent e;
@@ -851,39 +956,17 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent& event)
 void PrefsUnifiedDlg::OnButtonColorChange(wxCommandEvent& WXUNUSED(event))
 {
 	int index = m_choiceColor->GetSelection();
-	wxColour col = WxColourFromCr( thePrefs::s_colors[index] );
-	col = wxGetColourFromUser( this, col );
+	wxColour col = wxGetColourFromUser( this, CMuleColour(thePrefs::s_colors[index]) );
 	if ( col.Ok() ) {
 		m_buttonColor->SetBackgroundColour( col );
-		thePrefs::s_colors[index] = CrFromWxColour(col);
+		thePrefs::s_colors[index] = CMuleColour(col).GetULong();
 	}
 }
 
 
 void PrefsUnifiedDlg::OnColorCategorySelected(wxCommandEvent& WXUNUSED(evt))
 {
-	m_buttonColor->SetBackgroundColour(
-		WxColourFromCr( thePrefs::s_colors[ m_choiceColor->GetSelection() ] ) );
-}
-
-
-void PrefsUnifiedDlg::OnBrowserChange( wxCommandEvent& evt )
-{
-	wxTextCtrl* textctrl = CastChild( IDC_BROWSERSELF, wxTextCtrl );
-	wxButton* btn = CastChild( IDC_SELBROWSER, wxButton );
-	bool enable =
-		evt.GetSelection() ==
-		(int)CastChild( IDC_BROWSER, wxChoice )->GetCount() - 1;
-
-	if (textctrl) {
-		textctrl->Enable( enable );
-	}
-	if (btn) {
-		btn->Enable( enable );
-	}
-#ifndef __WXMSW__
-	FindWindow( IDC_BROWSERTABS )->Enable( !enable );
-#endif
+	m_buttonColor->SetBackgroundColour(CMuleColour(thePrefs::s_colors[ m_choiceColor->GetSelection() ] ) );
 }
 
 
@@ -914,7 +997,7 @@ void PrefsUnifiedDlg::OnButtonDir(wxCommandEvent& event)
 //		break;
 
 	default:
-		wxASSERT(false);
+		wxFAIL;
 		return;
 	}
 
@@ -945,7 +1028,7 @@ void PrefsUnifiedDlg::OnButtonBrowseApplication(wxCommandEvent& event)
 			title = _("Select browser");
 			break;
 		default:
-			wxASSERT( false );
+			wxFAIL;
 			return;
 	}
 	wxString wildcard = CFormat(_("Executable%s"))
@@ -954,7 +1037,7 @@ void PrefsUnifiedDlg::OnButtonBrowseApplication(wxCommandEvent& event)
 #else
 		% wxT("|*");
 #endif
-	
+
 	wxString str = wxFileSelector( title, wxEmptyString, wxEmptyString,
 		wxEmptyString, wildcard, 0, this );
 
@@ -1029,47 +1112,47 @@ void PrefsUnifiedDlg::OnScrollBarChange( wxScrollEvent& event )
 	switch ( event.GetId() ) {
 	case IDC_SLIDER:
 		id = IDC_SLIDERINFO;
-		label = wxString::Format( wxPLURAL("Update delay: %d second", "Update delay: %d seconds", event.GetPosition()), event.GetPosition() );
+		label = CFormat(wxPLURAL("Update delay: %d second", "Update delay: %d seconds", event.GetPosition())) % event.GetPosition();
 		theApp->amuledlg->m_statisticswnd->SetUpdatePeriod(event.GetPosition());
 		theApp->amuledlg->m_kademliawnd->SetUpdatePeriod(event.GetPosition());
 		break;
 
 	case IDC_SLIDER3:
 		id = IDC_SLIDERINFO3;
-		label = wxString::Format( wxPLURAL("Time for average graph: %d minute", "Time for average graph: %d minutes", event.GetPosition()), event.GetPosition() );
+		label = CFormat(wxPLURAL("Time for average graph: %d minute", "Time for average graph: %d minutes", event.GetPosition())) % event.GetPosition();
 		theApp->m_statistics->SetAverageMinutes(event.GetPosition());
 		break;
 
 	case IDC_SLIDER4:
 		id = IDC_SLIDERINFO4;
-		label = wxString::Format( _("Connections Graph Scale: %d"), event.GetPosition() );
-		theApp->amuledlg->m_statisticswnd->GetConnScope()->SetRanges(0,event.GetPosition());
+		label = CFormat(_("Connections Graph Scale: %d")) % event.GetPosition();
+		theApp->amuledlg->m_statisticswnd->GetConnScope()->SetRanges(0, event.GetPosition());
 		break;
 
 	case IDC_SLIDER2:
 		id = IDC_SLIDERINFO2;
-		label = wxString::Format( wxPLURAL("Update delay : %d second", "Update delay : %d seconds", event.GetPosition()), event.GetPosition() );
+		label = CFormat(wxPLURAL("Update delay: %d second", "Update delay: %d seconds", event.GetPosition())) % event.GetPosition();
 		break;
 
 	case IDC_FILEBUFFERSIZE:
 		id = IDC_FILEBUFFERSIZE_STATIC;
 		// Yes, it seems odd to add the singular form here, but other languages might need to know the number to select the appropriate translation
-		label = wxString::Format( wxPLURAL("File Buffer Size: %d byte", "File Buffer Size: %d bytes", event.GetPosition() * 15000), event.GetPosition() * 15000 );
+		label = CFormat(wxPLURAL("File Buffer Size: %d byte", "File Buffer Size: %d bytes", event.GetPosition() * 15000)) % (event.GetPosition() * 15000);
 		break;
 
 	case IDC_QUEUESIZE:
 		id = IDC_QUEUESIZE_STATIC;
 		// Yes, it seems odd to add the singular form here, but other languages might need to know the number to select the appropriate translation
-		label = wxString::Format( wxPLURAL("Upload Queue Size: %d client", "Upload Queue Size: %d clients", event.GetPosition() * 100), event.GetPosition() * 100 );
+		label = CFormat(wxPLURAL("Upload Queue Size: %d client", "Upload Queue Size: %d clients", event.GetPosition() * 100)) % (event.GetPosition() * 100);
 		break;
 
 	case IDC_SERVERKEEPALIVE:
 		id = IDC_SERVERKEEPALIVE_LABEL;
 
 		if ( event.GetPosition() ) {
-			label = wxString::Format( wxPLURAL("Server connection refresh interval: %d minute", "Server connection refresh interval: %d minutes", event.GetPosition()), event.GetPosition() );
+			label = CFormat(wxPLURAL("Server connection refresh interval: %d minute", "Server connection refresh interval: %d minutes", event.GetPosition())) % event.GetPosition();
 		} else {
-			label = wxString::Format( _("Server connection refresh interval: Disabled") );
+			label = _("Server connection refresh interval: Disabled");
 		}
 		break;
 
@@ -1088,13 +1171,13 @@ void PrefsUnifiedDlg::OnScrollBarChange( wxScrollEvent& event )
 
 void PrefsUnifiedDlg::OnRateLimitChanged( wxSpinEvent& event )
 {
-	// Here we do immediate sainity checking of the up/down ratio,
+	// Here we do immediate sanity checking of the up/down ratio,
 	// so that the user can see if his choice is illegal
 
 	// We only do checks if the rate is limited
 	if ( event.GetPosition() != (int)UNLIMITED ) {
 		wxSpinCtrl* dlrate = CastChild( IDC_MAXDOWN, wxSpinCtrl );
-	
+
 		if ( event.GetPosition() < 4 ) {
 			if (	( event.GetPosition() * 3 < dlrate->GetValue() ) ||
 				( dlrate->GetValue() == (int)UNLIMITED ) ) {
@@ -1112,13 +1195,9 @@ void PrefsUnifiedDlg::OnRateLimitChanged( wxSpinEvent& event )
 
 void PrefsUnifiedDlg::OnTCPClientPortChange(wxSpinEvent& WXUNUSED(event))
 {
-	wxString txt(_("UDP port for extended server requests (TCP+3): "));
-	if (m_ServerTabVisible) {
-		txt << (CastChild(IDC_PORT, wxSpinCtrl)->GetValue() + 3);
-	} else {
-		txt << _("disabled");
-	}
-	CastChild(ID_TEXT_CLIENT_UDP_PORT, wxStaticText)->SetLabel(txt);
+	CastChild(ID_TEXT_CLIENT_UDP_PORT, wxStaticText)->SetLabel(
+		m_ServerTabVisible ? (wxString() << (CastChild(IDC_PORT, wxSpinCtrl)->GetValue() + 3))
+							: wxString(_("disabled")));
 }
 
 void PrefsUnifiedDlg::OnUserEventSelected(wxListEvent& event)
@@ -1134,9 +1213,14 @@ void PrefsUnifiedDlg::OnUserEventSelected(wxListEvent& event)
 	event.Skip();
 }
 
+void PrefsUnifiedDlg::OnLanguageChoice(wxCommandEvent &evt)
+{
+	thePrefs::GetCfgLang()->UpdateChoice(evt.GetSelection());
+}
+
 void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString& vars, wxWindow* parent)
 {
-	wxStaticBox *item8 = new wxStaticBox( parent, -1, CFormat(_("Execute command on `%s' event")) % wxGetTranslation(CUserEvents::GetDisplayName(static_cast<enum CUserEvents::EventType>(idx))) );
+	wxStaticBox *item8 = new wxStaticBox( parent, -1, CFormat(_("Execute command on '%s' event")) % wxGetTranslation(CUserEvents::GetDisplayName(static_cast<enum CUserEvents::EventType>(idx))) );
 	wxStaticBoxSizer *item7 = new wxStaticBoxSizer( item8, wxVERTICAL );
 
 	wxCheckBox *item9 = new wxCheckBox( parent, USEREVENTS_FIRST_ID + idx * USEREVENTS_IDS_PER_EVENT + 1, _("Enable command execution on core"), wxDefaultPosition, wxDefaultSize, 0 );
