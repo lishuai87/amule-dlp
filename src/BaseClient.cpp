@@ -645,10 +645,10 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile& data)
 			//Bill Lee start
 			//Dynamic Leecher Protection
 			default:	//if tag isn't those above, it may be used by leecher.
-				if(!IsBanned()){
-					if(thePrefs::GetDLPCheckMask() & PF_HELLOTAG) {
+				if (!IsBanned()){
+					if (thePrefs::GetDLPCheckMask() & PF_HELLOTAG) {
 						const wxChar* dlp_result = CantiLeech().DLPCheckHelloTag(temptag.GetNameID());
-						if(dlp_result != NULL) {
+						if (dlp_result != NULL) {
 							wxString ret;
 							ret.Printf(wxT("[HelloTag %s] %s"), dlp_result, GetClientFullInfo().c_str());
 							Ban();
@@ -657,7 +657,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile& data)
 					}
 				}
 				dlp_nonofficalopcodes = true; //to detect Ghost Mod
-					break;
+				break;
 			//Bill Lee end
 		}
 	}
@@ -743,7 +743,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile& data)
 		Kademlia::CKademlia::Bootstrap(wxUINT32_SWAP_ALWAYS(GetIP()), GetKadPort());
 	}
 
-	if(!IsBanned()){
+	if (!IsBanned()) {
 		DLPCheck();
 	}
 	//Bill Lee end
@@ -1005,10 +1005,10 @@ bool CUpDownClient::ProcessMuleInfoPacket(const byte* pachPacket, uint32 nSize)
 
 					//Bill Lee start
 					//Dynamic Leecher Protection
-					if(!IsBanned()){
-						if(thePrefs::GetDLPCheckMask() & PF_INFOTAG) {
+					if (!IsBanned()) {
+						if (thePrefs::GetDLPCheckMask() & PF_INFOTAG) {
 							const wxChar* dlp_result = CantiLeech().DLPCheckInfoTag(temptag.GetNameID());
-							if(dlp_result != NULL) {
+							if (dlp_result != NULL) {
 								wxString ret;
 								ret.Printf(wxT("[InfoTag %s] %s"), dlp_result, GetClientFullInfo().c_str());
 								Ban();
@@ -1021,7 +1021,7 @@ bool CUpDownClient::ProcessMuleInfoPacket(const byte* pachPacket, uint32 nSize)
 
 					break;
 			}
-		}				
+		}
 
 		if( m_byDataCompVer == 0 ){
 			m_bySourceExchange1Ver = 0;
@@ -1056,7 +1056,7 @@ bool CUpDownClient::ProcessMuleInfoPacket(const byte* pachPacket, uint32 nSize)
 		m_byInfopacketsReceived |= IP_EMULEPROTPACK;
 	}
 
-	if(!IsBanned()) DLPCheck(); //Dynamic Leecher Protection - Added by Bill Lee
+	if (!IsBanned()) DLPCheck(); //Dynamic Leecher Protection - Added by Bill Lee
 
 	return (protocol_version == 0xFF); // This was a OS_Info?
 }
@@ -3049,8 +3049,8 @@ bool CUpDownClient::DLPCheck()
 	CString uhash(wxString(GetUserHash().EncodeSTL().c_str(), wxConvUTF8));
 
 	//CheckGhostMod
-	if(prefs & PF_GHOSTMOD) {
-		if(dlp_nonofficalopcodes && (modver.IsEmpty())) {
+	if (prefs & PF_GHOSTMOD) {
+		if (dlp_nonofficalopcodes && (modver.IsEmpty())) {
 			ret = wxT("Ghost Mod");
 			tmp = ret.c_str(); //char pointer
 		}
@@ -3058,7 +3058,7 @@ bool CUpDownClient::DLPCheck()
 
 	// Check bad modstring
 	if ((prefs & PF_MODSTRING) && (tmp == NULL)) {
-		if((tmp = DLP.DLPCheckModstring_Soft(modver.c_str(), clientver.c_str())) == NULL)
+		if ((tmp = DLP.DLPCheckModstring_Soft(modver.c_str(), clientver.c_str())) == NULL)
 			tmp = DLP.DLPCheckModstring_Hard(modver.c_str(), clientver.c_str());
 	}
 	/*

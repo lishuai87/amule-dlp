@@ -2692,10 +2692,6 @@ wxSizer *serverListDlgDown( wxWindow *parent, bool call_fit, bool set_sizer )
     ServerInfoLog( item5, FALSE );
     item3->AddPage( item5, _("Server Info") );
 
-    wxPanel *item8 = new wxPanel( item3, -1);
-    DLPInfoLog( item8, FALSE);
-    item3->AddPage(item8, _("DLP Info"));
-
     wxPanel *item6 = new wxPanel( item3, -1 );
     ED2K_Info( item6, FALSE );
     item3->AddPage( item6, _("ED2K Info") );
@@ -2703,6 +2699,10 @@ wxSizer *serverListDlgDown( wxWindow *parent, bool call_fit, bool set_sizer )
     wxPanel *item7 = new wxPanel( item3, -1 );
     Kad_Info( item7, FALSE );
     item3->AddPage( item7, _("Kad Info") );
+
+    wxPanel *item8 = new wxPanel( item3, -1);
+    DLPInfoLog( item8, FALSE);
+    item3->AddPage(item8, _("DLP Info"));
 
     item0->Add( item2, 1, wxGROW|wxALIGN_CENTER_VERTICAL, 5 );
 

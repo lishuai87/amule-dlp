@@ -621,7 +621,7 @@ void CDownloadQueue::CheckAndAddSource(CPartFile* sender, CUpDownClient* source)
 	}
 
 	//Dynamic Leecher Protect - Bill Lee
-	if ( source->IsBanned() ){
+	if (source->IsBanned()) {
 		source->Safe_Delete();
 		return;
 	}

@@ -669,14 +669,14 @@ void CamuleDlg::AddServerMessageLine(wxString& message)
 
 void CamuleDlg::AddDLPMessageLine(wxString& msg)
 {
-	wxTextCtrl* cv = CastByID( ID_DLPINFO, m_serverwnd, wxTextCtrl );
-	if(cv) {
+	wxTextCtrl* cv = CastByID(ID_DLPINFO, m_serverwnd, wxTextCtrl);
+	if (cv) {
 		if (msg.Length() > 500) {
 			cv->AppendText(msg.Left(500) + wxT("\n"));
 		} else {
 			cv->AppendText(msg + wxT("\n"));
 		}
-		cv->ShowPosition(cv->GetLastPosition()-1);
+		cv->ShowPosition(cv->GetLastPosition() - 1);
 	}
 }
 

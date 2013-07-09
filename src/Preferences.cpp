@@ -1078,7 +1078,6 @@ void CPreferences::BuildItemList( const wxString& appdir )
 	NewCfgItem( IDC_NETWORKKAD, (new Cfg_Bool( wxT("/eMule/ConnectToKad"),	s_ConnectToKad, true )) );
 	NewCfgItem( IDC_NETWORKED2K, ( new Cfg_Bool( wxT("/eMule/ConnectToED2K"),	s_ConnectToED2K, true ) ));
 
-
 	/**
 	 * Dynamic Leecher Protection
 	 **/

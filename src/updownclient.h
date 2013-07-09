@@ -845,7 +845,6 @@ private:
 #endif
 
 	bool dlp_nonofficalopcodes; //Dynamic Leecher Protect - Bill Lee
-
 };
 
 
